@@ -43,7 +43,8 @@ pub async fn create_rbac_token(mut req: Request<Arc<App>>) -> tide::Result {
     match res {
         Ok(raft_res) => Ok(Response::builder(StatusCode::Created)
             .header("Content-Type", "application/json")
-            .body(Body::from_json(&raft_res)?).build()),
+            .body(Body::from_json(&json!({"result": "success"}))?)
+            .build()),
         Err(e) => Ok(Response::builder(StatusCode::InternalServerError)
             .header("Content-Type", "application/text")
             .body(Body::from_string(e.to_string())).build()),
@@ -58,7 +59,7 @@ pub async fn list_rbac_tokens(req: Request<Arc<App>>) -> tide::Result {
     match result {
         Ok(tokens) => Ok(Response::builder(StatusCode::Ok)
             .header("Content-Type", "application/json")
-            .body(Body::from_json(&tokens)?).build()),
+            .body(Body::from_string(tokens)).build()),
         Err(e) => Ok(Response::builder(StatusCode::InternalServerError)
             .header("Content-Type", "application/text")
             .body(Body::from_string(e)).build()),

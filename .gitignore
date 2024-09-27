@@ -34,3 +34,7 @@ lib/
 venv/
 *.hdf5
 download
+*.hdf5
+install_dependency_dev.sh
+.env
+Dockerfile_dev

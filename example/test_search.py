@@ -24,8 +24,8 @@ def test_search(host, single_node):
         "dimension": 4,
         "metric": "L2",
         "hnsw_config": {
-            "M": 16,
-            "ef_construct": 100
+            "M": 64,
+            "ef_construct": 500
         }
     }
     post_request(f"{host}21001/api/space", create_space_data)

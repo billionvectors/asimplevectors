@@ -101,7 +101,7 @@ pub async fn get_version_by_id(req: Request<Arc<App>>) -> tide::Result {
         Ok(version) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(Body::from_json(&version)?).build()),
+                .body(Body::from_string(version)).build()),
         Err(e) => Ok(Response::builder(StatusCode::NotFound).body(Body::from_string(e)).build()),
     }
 }
@@ -125,7 +125,7 @@ pub async fn get_version_by_name(req: Request<Arc<App>>) -> tide::Result {
         Ok(version) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(Body::from_json(&version)?).build()),
+                .body(Body::from_string(version)).build()),
         Err(e) => Ok(Response::builder(StatusCode::NotFound).body(Body::from_string(e)).build()),
     }
 }
@@ -148,7 +148,7 @@ pub async fn get_default_version(req: Request<Arc<App>>) -> tide::Result {
         Ok(default_version) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(Body::from_json(&default_version)?).build()),
+                .body(Body::from_string(default_version)).build()),
         Err(e) => Ok(Response::builder(StatusCode::NotFound).body(Body::from_string(e)).build()),
     }
 }
@@ -171,7 +171,7 @@ pub async fn list_versions(req: Request<Arc<App>>) -> tide::Result {
         Ok(versions) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(Body::from_json(&versions)?).build()),
+                .body(Body::from_string(versions)).build()),
         Err(e) => Ok(Response::builder(StatusCode::InternalServerError).body(Body::from_string(e)).build()),
     }
 }

@@ -1,12 +1,11 @@
 #!/bin/bash
+sudo apt-get install python3-distutils libhdf5-dev jq
+
 mkdir lib
 mkdir temp
 cd temp
-git clone https://github.com/billionvectors/atinyvectors_dev.git
-cd atinyvectors_dev
+git clone https://github.com/billionvectors/atinyvectors.git
+cd atinyvectors
 git pull
-# ./dockerbuild.sh --no-cache=true
-# cp output/* ../../lib/
-./build_run_test.sh
-cp -rf build/lib* ../../lib/
-
+./dockerbuild.sh --no-cache=true
+cp output/* ../../lib/

@@ -186,13 +186,7 @@ def benchmark(host):
             if response.status_code == 200:
                 try:
                     # First parse the outer JSON string
-                    raw_search_results = json.loads(response.text)
-                    
-                    # If raw_search_results is still a string, parse it again
-                    if isinstance(raw_search_results, str):
-                        search_results = json.loads(raw_search_results)
-                    else:
-                        search_results = raw_search_results
+                    search_results = json.loads(response.text)
 
                     # Ensure search_results[0] is a dictionary and contains 'label'
                     if isinstance(search_results[0], dict) and 'label' in search_results[0]:

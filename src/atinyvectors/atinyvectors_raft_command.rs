@@ -1,7 +1,11 @@
 use serde_json::Value;
 use std::sync::Arc;
 use tracing;
-use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
+use rocksdb::{Options, DB};
+use async_std::fs;
+use async_std::path::Path;
+
+use crate::{atinyvectors::atinyvectors_bo::ATinyVectorsBO, config::Config};
 
 #[derive(Clone, Debug)]
 pub struct ATinyVectorsRaftCommand {
@@ -22,12 +26,15 @@ impl ATinyVectorsRaftCommand {
     ) {
         match command {
             "space" => self.process_space_command(request_obj, key, value).await,
+            "delete_space" => self.process_delete_space_command(request_obj).await,
             "version" => self.process_version_command(request_obj).await,
             "vector" => self.process_vector_command(request_obj).await,
             "vector_with_version" => self.process_vector_with_version_command(request_obj).await,
             "create_snapshot" => self.process_create_snapshot_command(request_obj).await,
             "snapshot_restore" => self.process_snapshot_restore_command(request_obj).await,
             "create_rbac_token" => self.process_create_rbac_token_command(request_obj).await,
+            "storage_put_key" => self.process_storage_put_key_command(request_obj).await,
+            "storage_remove_key" => self.process_storage_remove_key_command(request_obj).await,
             _ => {
                 tracing::warn!("Unknown command: {}", command);
             }
@@ -47,6 +54,16 @@ impl ATinyVectorsRaftCommand {
             }
         } else {
             tracing::error!("No 'value' field found in 'request'");
+        }
+    }
+
+    async fn process_delete_space_command(&self, request_obj: &Value) {
+        tracing::info!("Processing delete space command");
+        let space_name = request_obj.get("space_name").and_then(|v| v.as_str()).unwrap_or("default");
+        let value = request_obj.get("value").and_then(|v| v.as_str()).unwrap_or("{}");
+
+        if let Err(e) = self.atinyvectors_bo.space.delete_space(space_name, &value.to_string()) {
+            tracing::error!("Failed to delete space: {}", e);
         }
     }
 
@@ -121,5 +138,54 @@ impl ATinyVectorsRaftCommand {
         if let Err(e) = self.atinyvectors_bo.rbac_token.new_token(json_str, token) {
             tracing::error!("Failed to create RBAC token: {}", e);
         }
+    }
+
+    async fn process_storage_put_key_command(&self, request_obj: &Value) {
+        tracing::debug!("Processing storage_put_key command");
+        let space_name = request_obj.get("space_name").and_then(|v| v.as_str()).unwrap_or("default");
+        let key = request_obj.get("key").and_then(|v| v.as_str()).unwrap_or("");
+
+        if let Some(value) = request_obj.get("value") {
+            let target_directory = format!("{}/space/{}", Config::data_path(), space_name);
+        
+            // Create target directory if it does not exist
+            if !std::path::Path::new(&target_directory).exists() {
+                let _ = fs::create_dir_all(&target_directory).await;
+            }
+
+            let path = target_directory + "storage.rocksdb";
+            let mut db_opts = Options::default();
+            db_opts.create_if_missing(true);
+
+            let db = DB::open(&db_opts, path).unwrap();
+            let _ = db.put(key, value.to_string());
+        } else {
+            tracing::error!("No 'value' field found in 'request'");
+        }
+    }
+
+    async fn process_storage_remove_key_command(&self, request_obj: &Value) {
+        tracing::debug!("Processing storage_remove_key command");
+        let space_name = request_obj.get("space_name").and_then(|v| v.as_str()).unwrap_or("default");
+        let key = request_obj.get("key").and_then(|v| v.as_str()).unwrap_or("");
+
+        let target_directory = format!("{}/space/{}", Config::data_path(), space_name);
+
+        // Create target directory if it does not exist
+        if !std::path::Path::new(&target_directory).exists() {
+            let _ = fs::create_dir_all(&target_directory).await;
+        }
+
+        let path = target_directory + "storage.rocksdb";
+        if !std::path::Path::new(&path).exists() {
+            tracing::debug!("No database found at path: {}. Returning early.", path);
+            return; // No database, no key to remove
+        }
+
+        let mut db_opts = Options::default();
+        db_opts.create_if_missing(true);
+
+        let db = DB::open(&db_opts, path).unwrap();
+        let _ = db.delete(key);
     }
 }

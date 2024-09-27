@@ -148,7 +148,7 @@ pub async fn list_snapshots(req: Request<Arc<App>>) -> tide::Result {
         Ok(snapshots) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(Body::from_json(&snapshots)?).build()),
+                .body(Body::from_string(snapshots)).build()),
         Err(e) => Ok(
             Response::builder(StatusCode::InternalServerError)
                 .body(Body::from_string(e)).build()),

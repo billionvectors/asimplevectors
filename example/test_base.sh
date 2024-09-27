@@ -188,9 +188,9 @@ else
 fi
 
 if [ "$SINGLE_NODE" = true ]; then
-    python ./tests/test_$TARGET.py --single
+    python ./example/test_$TARGET.py --single
 else
-    python ./tests/test_$TARGET.py
+    python ./example/test_$TARGET.py
 fi
 
 # Continue with the rest of the script...

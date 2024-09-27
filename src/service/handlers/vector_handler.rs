@@ -48,6 +48,7 @@ pub async fn vector(mut req: Request<Arc<App>>) -> tide::Result {
     }
 
     let space_name = req.param("space_name").unwrap_or("default").to_string();
+
     let body: Value = req.body_json().await?;
     let wrapped_body = json!({
         "request": {
@@ -90,7 +91,8 @@ pub async fn vector_with_version(mut req: Request<Arc<App>>) -> tide::Result {
     }
 
     let space_name = req.param("space_name").unwrap_or("default").to_string();
-    let version_id = req.param("version_id").unwrap_or("default").to_string();
+    let version_id = req.param("version_id").unwrap_or("0").to_string();
+
     let body: Value = req.body_json().await?;
     let wrapped_body = json!({
         "request": {
@@ -136,13 +138,15 @@ pub async fn get_vectors_by_version_id(req: Request<Arc<App>>) -> tide::Result {
     let space_name = req.param("space_name").unwrap_or("default").to_string();
     let version_id: i32 = req.param("version_id").unwrap_or("0").parse().unwrap_or(0);
     let bo = req.state().atinyvectors_bo.clone();
+
+    // FIX: wrong api (version id is unique_version_id but it used real version id)
     let result = bo.vector.get_vectors_by_version_id(version_id);
 
     match result {
         Ok(vectors) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(Body::from_json(&vectors)?).build()),
+                .body(Body::from_string(vectors)).build()),
         Err(e) => Ok(
             Response::builder(StatusCode::NotFound).body(Body::from_string(e)).build()),
     }

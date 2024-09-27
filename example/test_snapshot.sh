@@ -248,7 +248,7 @@ rpc 21001/api/snapshots
 sleep 1
 
 response=$(curl -s http://127.0.0.1:21001/api/snapshots)
-FILENAME=$(echo "$response" | jq -r 'fromjson | .snapshots[0].file_name')
+FILENAME=$(echo "$response" | jq -r '.snapshots[0].file_name')
 DATETIME=$(echo "$FILENAME" | sed -n 's/^snapshot-\([0-9]*\)\.zip$/\1/p')
 echo "Extracted FILENAME: $FILENAME DATETIME: $DATETIME"
 sleep 1

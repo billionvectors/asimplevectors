@@ -4,3 +4,4 @@ pub mod vector_handler;
 pub mod search_handler;
 pub mod snapshot_handler;
 pub mod security_handler;
+pub mod kvstorage_handler;

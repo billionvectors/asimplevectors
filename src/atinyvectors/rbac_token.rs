@@ -16,6 +16,10 @@ extern "C" {
     pub fn atv_rbac_token_get_version_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
     pub fn atv_rbac_token_get_vector_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
     pub fn atv_rbac_token_get_snapshot_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_search_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_security_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_keyvalue_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
+    
     pub fn atv_rbac_token_new_token(manager: *mut RbacTokenDTOManager, json_str: *const c_char, token: *const c_char) -> *mut c_char;
     pub fn atv_rbac_token_generate_jwt_token(manager: *mut RbacTokenDTOManager, expire_days: i32) -> *mut c_char;
     pub fn atv_rbac_token_list_tokens(manager: *mut RbacTokenDTOManager) -> *mut c_char;
@@ -57,6 +61,21 @@ impl RbacTokenDTOManagerWrapper {
     pub fn get_snapshot_permission(&self, token: &str) -> i32 {
         let token_c = CString::new(token).unwrap();
         unsafe { atv_rbac_token_get_snapshot_permission(self.inner, token_c.as_ptr()) }
+    }
+
+    pub fn get_search_permission(&self, token: &str) -> i32 {
+        let token_c = CString::new(token).unwrap();
+        unsafe { atv_rbac_token_get_search_permission(self.inner, token_c.as_ptr()) }
+    }
+
+    pub fn get_security_permission(&self, token: &str) -> i32 {
+        let token_c = CString::new(token).unwrap();
+        unsafe { atv_rbac_token_get_security_permission(self.inner, token_c.as_ptr()) }
+    }
+
+    pub fn get_keyvalue_permission(&self, token: &str) -> i32 {
+        let token_c = CString::new(token).unwrap();
+        unsafe { atv_rbac_token_get_keyvalue_permission(self.inner, token_c.as_ptr()) }
     }
 
     pub fn new_token(&self, json_str: &str, token: &str) -> Result<String, String> {

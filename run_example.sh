@@ -26,9 +26,12 @@ if [ "$2" = "--release" ] || [ "$3" = "--release" ]; then
   BUILD_MODE="--release"
 fi
 
-export ATV_LOG_LEVEL=info
-export ATV_LOG_FILE=logs/atinyvectors.log
-export LD_LIBRARY_PATH=./lib:$LD_LIBRARY_PATH
+# Check if the dependency installed
+if [ ! -d "lib" ]; then
+  echo "Dependency Library not found. install dependency..."
+  bash ./install_dependency.sh
+fi
+
 export RUST_LOG=trace
 export RUST_BACKTRACE=full
 
@@ -58,11 +61,12 @@ fi
 # Activate the virtual environment
 echo "Activating virtual environment..."
 source venv/bin/activate
+pip install --upgrade pip setuptools wheel
 
 # Install dependencies from requirements.txt
-if [ -f "./tests/requirements.txt" ]; then
+if [ -f "./example/requirements.txt" ]; then
   echo "Installing dependencies from requirements.txt..."
-  pip install -r ./tests/requirements.txt
+  pip install -r ./example/requirements.txt
 
   if [ $? -eq 0 ]; then
     echo "Dependencies installed successfully."
@@ -72,12 +76,12 @@ if [ -f "./tests/requirements.txt" ]; then
   fi
 fi
 
-TEST_FILE="./tests/test_$TEST_NAME.sh"
+TEST_FILE="./example/test_$TEST_NAME.sh"
 # Check if the test file exists
 if [ -f "$TEST_FILE" ]; then
   echo "Running test: $TEST_FILE with option: $SINGLE_MODE"
   bash "$TEST_FILE" $SINGLE_MODE
 else
-  echo "Running test: ./tests/test_base.sh $TEST_NAME with option: $SINGLE_MODE $BUILD_MODE"
-  bash "./tests/test_base.sh" $TEST_NAME $SINGLE_MODE $BUILD_MODE
+  echo "Running test: ./example/test_base.sh $TEST_NAME with option: $SINGLE_MODE $BUILD_MODE"
+  bash "./example/test_base.sh" $TEST_NAME $SINGLE_MODE $BUILD_MODE
 fi

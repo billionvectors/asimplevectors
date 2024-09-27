@@ -12,6 +12,7 @@ extern "C" {
     pub fn atv_space_dto_manager_new() -> *mut SpaceDTOManager;
     pub fn atv_space_dto_manager_free(manager: *mut SpaceDTOManager);
     pub fn atv_space_dto_create_space(manager: *mut SpaceDTOManager, json_str: *const c_char);
+    pub fn atv_space_dto_delete_space(manager: *mut SpaceDTOManager, space_name: *const c_char, json_str: *const c_char);
     pub fn atv_space_dto_get_by_space_id(manager: *mut SpaceDTOManager, space_id: i32) -> *mut c_char;
     pub fn atv_space_dto_get_by_space_name(manager: *mut SpaceDTOManager, space_name: *const c_char) -> *mut c_char;
     pub fn atv_space_dto_get_lists(manager: *mut SpaceDTOManager) -> *mut c_char;
@@ -47,6 +48,15 @@ impl SpaceDTOManagerWrapper {
                 super::atv_free_json_string(result);
                 Ok(result_str)
             }
+        }
+    }
+
+    pub fn delete_space(&self, space_name: &str, json_str: &str) -> Result<(), String> {
+        let space_name_c = CString::new(space_name).unwrap();
+        let json_str_c = CString::new(json_str).unwrap();
+        unsafe {
+            atv_space_dto_delete_space(self.inner, space_name_c.as_ptr(), json_str_c.as_ptr());
+            Ok(())
         }
     }
 

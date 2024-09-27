@@ -2,7 +2,7 @@ use std::sync::Arc;
 use tide::{Body, Request, Response, StatusCode};
 use serde_json::Value;
 use serde_json::json;
-use tracing::{debug, error};
+use tracing::debug;
 
 use crate::config::Config;
 use crate::raft_cluster::app::App;
@@ -108,7 +108,47 @@ pub async fn get_space(req: Request<Arc<App>>) -> tide::Result {
     Ok(
         Response::builder(StatusCode::Ok)
             .header("Content-Type", "application/json")
-            .body(Body::from_json(&res_body)?).build())
+            .body(Body::from_string(res_body)).build())
+}
+
+// DELETE /api/space/{space_name}
+pub async fn delete_space(mut req: Request<Arc<App>>) -> tide::Result {
+    if !check_write_permission(&req).await? {
+        return Ok(
+            Response::builder(StatusCode::Forbidden)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": "Forbidden"}))?)
+                .build());
+    }
+
+    let body: Value = req.body_json().await?;
+    let wrapped_body = json!({
+        "request": {
+            "command": "delete_space",
+            "value": body
+        }
+    });
+    let raft_req = RaftRequest::Set {
+        key: "delete_space".to_string(),
+        value: serde_json::to_string(&wrapped_body)?,
+    };
+
+    // Send a write request to the Raft client
+    let res = req.state().raft.client_write(raft_req).await;
+
+    // Handle response
+    match res {
+        Ok(_) => Ok(
+            Response::builder(StatusCode::Ok)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"result": "success"}))?)
+                .build()),
+        Err(e) => Ok(
+            Response::builder(StatusCode::InternalServerError)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": e.to_string()}))?)
+                .build()),
+    }
 }
 
 // GET /api/space/list
@@ -132,5 +172,5 @@ pub async fn list_spaces(req: Request<Arc<App>>) -> tide::Result {
     Ok(
         Response::builder(StatusCode::Ok)
             .header("Content-Type", "application/json")
-            .body(Body::from_json(&res_body)?).build())
+            .body(Body::from_string(res_body)).build())
 }

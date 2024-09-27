@@ -48,16 +48,8 @@ def extract_token(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            # First parsing as a JSON string
             try:
-                # Load once to remove the outer quotes
-                outer_parsed = json.loads(response.text)
-                
-                # If outer_parsed is still a string, attempt to parse it again
-                if isinstance(outer_parsed, str):
-                    token_data = json.loads(outer_parsed)
-                else:
-                    token_data = outer_parsed
+                token_data = json.loads(response.text)
 
                 # Ensure token_data is a list and not empty
                 if isinstance(token_data, list) and len(token_data) > 0:

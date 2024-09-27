@@ -240,11 +240,11 @@ impl Config {
     }
 
     pub fn http_addr() -> String {
-        env::var("ATV_HTTP_ADDR").unwrap_or_else(|_| "127.0.0.1:21001".to_string())
+        env::var("ATV_HTTP_ADDR").unwrap_or_else(|_| "0.0.0.0:21001".to_string())
     }
 
     pub fn rpc_addr() -> String {
-        env::var("ATV_RPC_ADDR").unwrap_or_else(|_| "127.0.0.1:22001".to_string())
+        env::var("ATV_RPC_ADDR").unwrap_or_else(|_| "0.0.0.0:22001".to_string())
     }
 
     /// Method to get the singleton Config instance
