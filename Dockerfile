@@ -40,7 +40,7 @@ RUN git clone https://github.com/billionvectors/atinyvectors.git \
     && cp libatinyvectors.so /app/lib/
 
 # Clone asimplevectors
-COPY ./ /app/asimplevectors_dev
+COPY ./ /app/asimplevectors
 
 # Copy .env.local to .env in asimplevectors directory
 RUN cp /app/asimplevectors/.env.local /app/asimplevectors/.env
