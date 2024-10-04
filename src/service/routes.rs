@@ -1,5 +1,13 @@
 use std::sync::Arc;
 use tide::Server;
+use tide::prelude::json;
+use tide::{http::Mime, Response};
+
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+use utoipa_swagger_ui::Config;
 
 use crate::raft_cluster::app::App;
 use crate::service::handlers::{
@@ -8,7 +16,51 @@ use crate::service::handlers::{
     kvstorage_handler
 };
 
+async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Response> {
+    // swagger config
+    let swagger_config = Arc::new(utoipa_swagger_ui::Config::from("/api-docs/openapi.json"));
+
+    let path = request.url().path().to_string();
+    let tail = path.strip_prefix("/swagger-ui/").unwrap();
+
+    match utoipa_swagger_ui::serve(tail, swagger_config) {
+        Ok(swagger_file) => swagger_file
+            .map(|file| {
+                Ok(Response::builder(200)
+                    .body(file.bytes.to_vec())
+                    .content_type(file.content_type.parse::<Mime>()?)
+                    .build())
+            })
+            .unwrap_or_else(|| Ok(Response::builder(404).build())),
+        Err(error) => Ok(Response::builder(500).body(error.to_string()).build()),
+    }
+}
+
 pub fn register_routes(app: &mut Server<Arc<App>>) {
+    // Create an application that will store all the instances created above, this will
+    // be later used on the actix-web services.
+    #[derive(OpenApi)]
+    #[openapi(
+        paths(
+            space_handler::space,
+            space_handler::get_space,
+            space_handler::delete_space,
+            space_handler::list_spaces
+        ),
+        tags(
+            (name = "space", description = "space items management endpoints.")
+        )
+    )]
+    struct ApiDoc;
+
+    // serve OpenApi json
+    app.at("/api-docs/openapi.json")
+        .get(|_| async move { Ok(Response::builder(200).body(json!(ApiDoc::openapi()))) });
+    
+    // serve Swagger UI
+    app.at("/swagger-ui/*").get(serve_swagger);
+
+    // end points
     let mut api = app.at("/api");
 
     // Space endpoints

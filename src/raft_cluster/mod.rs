@@ -124,8 +124,6 @@ where
         server.accept_websocket(listener).await.unwrap();
     });
 
-    // Create an application that will store all the instances created above, this will
-    // be later used on the actix-web services.
     let mut app: Server = tide::Server::with_state(app);
 
     management::rest(&mut app);
@@ -136,4 +134,3 @@ where
     _ = handle.await;
     Ok(())
 }
-

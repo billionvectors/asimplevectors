@@ -35,6 +35,7 @@ venv/
 *.hdf5
 download
 *.hdf5
+*.db
 install_dependency_dev.sh
 .env
 Dockerfile_dev

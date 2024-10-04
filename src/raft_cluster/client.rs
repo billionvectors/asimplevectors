@@ -171,14 +171,8 @@ impl atinyvectorsClient {
         };
 
         let resp = if let Some(r) = req {
-            println!(
-                ">>> client send request to {}: {}",
-                url,
-                serde_json::to_string_pretty(&r).unwrap()
-            );
             self.inner.post(url.clone()).json(r)
         } else {
-            println!(">>> client send request to {}", url);
             self.inner.get(url.clone())
         }
         .send()
@@ -191,12 +185,6 @@ impl atinyvectorsClient {
         })?;
 
         let res: Result<Resp, Err> = resp.json().await.map_err(|e| RPCError::Network(NetworkError::new(&e)))?;
-        println!(
-            "<<< client recv reply from {}: {}",
-            url,
-            serde_json::to_string_pretty(&res).unwrap()
-        );
-
         res.map_err(|e| RPCError::RemoteError(RemoteError::new(leader_id, e)))
     }
 

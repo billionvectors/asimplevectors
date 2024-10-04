@@ -4,6 +4,11 @@ use serde_json::Value;
 use serde_json::json;
 use tracing::debug;
 
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+
 use crate::config::Config;
 use crate::raft_cluster::app::App;
 use crate::raft_cluster::store::Request as RaftRequest;
@@ -47,6 +52,13 @@ async fn check_write_permission(req: &Request<Arc<App>>) -> tide::Result<bool> {
 }
 
 // POST /api/space
+#[utoipa::path(
+    post,
+    path = "/api/space",
+    responses(
+        (status = 200, description = "Create spaces successfully")
+    )
+)]
 pub async fn space(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -87,6 +99,13 @@ pub async fn space(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /api/space/{space_name}
+#[utoipa::path(
+    get,
+    path = "/api/space/{space_name}",
+    responses(
+        (status = 200, description = "Get Space")
+    )
+)]
 pub async fn get_space(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -112,6 +131,13 @@ pub async fn get_space(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // DELETE /api/space/{space_name}
+#[utoipa::path(
+    delete,
+    path = "/api/space/{space_name}",
+    responses(
+        (status = 200, description = "Delete Space successfuly")
+    )
+)]
 pub async fn delete_space(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -152,6 +178,13 @@ pub async fn delete_space(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /api/space/list
+#[utoipa::path(
+    delete,
+    path = "/api/space/list",
+    responses(
+        (status = 200, description = "List Space successfuly")
+    )
+)]
 pub async fn list_spaces(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(

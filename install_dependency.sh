@@ -1,5 +1,5 @@
 #!/bin/bash
-sudo apt-get install python3-distutils libhdf5-dev jq
+sudo apt-get install python3-distutils libhdf5-dev jq libssl-dev
 
 mkdir lib
 mkdir temp
