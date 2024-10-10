@@ -153,7 +153,7 @@ pub async fn get_default_version(req: Request<Arc<App>>) -> tide::Result {
     }
 }
 
-// GET /space/{space_name}/version/list
+// GET /space/{space_name}/versions
 pub async fn list_versions(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(

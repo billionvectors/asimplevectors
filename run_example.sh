@@ -15,16 +15,26 @@ fi
 TEST_NAME="$1"
 SINGLE_MODE=""
 BUILD_MODE=""
+CARGO_BUILD_MODE=""
+LOGLEVEL="--loglevel=info"
 
-# Check if '--single' parameter is provided
-if [ "$2" = "--single" ] || [ "$3" = "--single" ]; then
-  SINGLE_MODE="--single"
-fi
-
-# Check if '--release' parameter is provided
-if [ "$2" = "--release" ] || [ "$3" = "--release" ]; then
-  BUILD_MODE="--release"
-fi
+for arg in "$@"; do
+  case $arg in
+    --single)
+      SINGLE_MODE="--single"
+      echo "Running in single node mode"
+      ;;
+    --release)
+      BUILD_MODE="--release"
+      CARGO_BUILD_MODE="--release"
+      echo "Release Build mode"
+      ;;
+    --loglevel=*)
+      LOGLEVEL="--loglevel=${arg#*=}"
+      echo "Log level set to $LOGLEVEL"
+      ;;
+  esac
+done
 
 # Check if the dependency installed
 if [ ! -d "lib" ]; then
@@ -41,7 +51,7 @@ rm -rf temp
 mkdir -p logs
 
 # Build with or without --release based on input
-cargo build $BUILD_MODE
+cargo build $CARGO_BUILD_MODE
 
 # Check if the virtual environment folder exists
 if [ ! -d "venv" ]; then
@@ -76,12 +86,18 @@ if [ -f "./example/requirements.txt" ]; then
   fi
 fi
 
+rm -r 127.0.0.1:*.db
+rm -r 0.0.0.0:*.db
+
 TEST_FILE="./example/test_$TEST_NAME.sh"
 # Check if the test file exists
 if [ -f "$TEST_FILE" ]; then
-  echo "Running test: $TEST_FILE with option: $SINGLE_MODE"
-  bash "$TEST_FILE" $SINGLE_MODE
+  echo "Running test: $TEST_FILE with option: $SINGLE_MODE $BUILD_MODE $LOGLEVEL"
+  bash "$TEST_FILE" $SINGLE_MODE $BUILD_MODE $LOGLEVEL
 else
-  echo "Running test: ./example/test_base.sh $TEST_NAME with option: $SINGLE_MODE $BUILD_MODE"
-  bash "./example/test_base.sh" $TEST_NAME $SINGLE_MODE $BUILD_MODE
+  echo "Running test: ./example/test_base.sh $TEST_NAME with option: $SINGLE_MODE $BUILD_MODE $LOGLEVEL"
+  bash "./example/test_base.sh" $TEST_NAME $SINGLE_MODE $BUILD_MODE $LOGLEVEL
 fi
+
+rm -r 127.0.0.1:*.db
+rm -r 0.0.0.0:*.db

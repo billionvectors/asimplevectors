@@ -5,3 +5,5 @@ pub mod search_handler;
 pub mod snapshot_handler;
 pub mod security_handler;
 pub mod kvstorage_handler;
+
+pub mod dto;

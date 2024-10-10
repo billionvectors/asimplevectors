@@ -26,6 +26,7 @@ impl ATinyVectorsRaftCommand {
     ) {
         match command {
             "space" => self.process_space_command(request_obj, key, value).await,
+            "update_space" => self.process_update_space_command(request_obj).await,
             "delete_space" => self.process_delete_space_command(request_obj).await,
             "version" => self.process_version_command(request_obj).await,
             "vector" => self.process_vector_command(request_obj).await,
@@ -51,6 +52,18 @@ impl ATinyVectorsRaftCommand {
         if let Some(space_value) = request_obj.get("value") {
             if let Err(e) = self.atinyvectors_bo.space.create_space(&space_value.to_string()) {
                 tracing::error!("Failed to create space: {}", e);
+            }
+        } else {
+            tracing::error!("No 'value' field found in 'request'");
+        }
+    }
+
+    async fn process_update_space_command(&self, request_obj: &Value) {
+        tracing::info!("Processing update space command");
+        let space_name = request_obj.get("space_name").and_then(|v| v.as_str()).unwrap_or("default");
+        if let Some(space_value) = request_obj.get("value") {
+            if let Err(e) = self.atinyvectors_bo.space.update_space(space_name, &space_value.to_string()) {
+                tracing::error!("Failed to update space: {}", e);
             }
         } else {
             tracing::error!("No 'value' field found in 'request'");

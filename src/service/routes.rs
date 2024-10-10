@@ -16,6 +16,12 @@ use crate::service::handlers::{
     kvstorage_handler
 };
 
+use crate::service::handlers::dto::space_dto::{
+    SpaceRequest, SpaceResponse, SpaceErrorResponse, 
+    DenseConfig, HnswConfig, QuantizationConfig, 
+    SparseConfig, ScalarQuantizationConfig, ProductQuantizationConfig,
+    VersionData, VectorIndexData, ListSpacesResponse, SpaceInfo,};
+
 async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Response> {
     // swagger config
     let swagger_config = Arc::new(utoipa_swagger_ui::Config::from("/api-docs/openapi.json"));
@@ -36,9 +42,7 @@ async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Respons
     }
 }
 
-pub fn register_routes(app: &mut Server<Arc<App>>) {
-    // Create an application that will store all the instances created above, this will
-    // be later used on the actix-web services.
+pub fn build_openapi(app: &mut Server<Arc<App>>) {
     #[derive(OpenApi)]
     #[openapi(
         paths(
@@ -49,6 +53,12 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
         ),
         tags(
             (name = "space", description = "space items management endpoints.")
+        ),
+        components(
+            schemas(SpaceRequest, SpaceResponse, SpaceErrorResponse, 
+                DenseConfig, HnswConfig, QuantizationConfig, 
+                SparseConfig, ScalarQuantizationConfig, ProductQuantizationConfig,
+                VersionData, VectorIndexData, ListSpacesResponse, SpaceInfo)
         )
     )]
     struct ApiDoc;
@@ -59,6 +69,13 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     
     // serve Swagger UI
     app.at("/swagger-ui/*").get(serve_swagger);
+}
+
+pub fn register_routes(app: &mut Server<Arc<App>>) {
+    // Create an application that will store all the instances created above, this will
+    // be later used on the actix-web services.
+
+    build_openapi(app);
 
     // end points
     let mut api = app.at("/api");
@@ -66,11 +83,12 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     // Space endpoints
     api.at("/space").post(space_handler::space);
     api.at("/space/:space_name").get(space_handler::get_space);
+    api.at("/space/:space_name").post(space_handler::update_space);
     api.at("/space/:space_name").delete(space_handler::delete_space);
-    api.at("/space/list").get(space_handler::list_spaces);
+    api.at("/spaces").get(space_handler::list_spaces);
 
     // Version endpoints
-    api.at("/space/:space_name/version/list").get(version_handler::list_versions);
+    api.at("/space/:space_name/versions").get(version_handler::list_versions);
     api.at("/space/:space_name/version/:version_id").get(version_handler::get_version_by_id);
     api.at("/space/:space_name/version/:version_name/by-name").get(version_handler::get_version_by_name);
     api.at("/space/:space_name/version/default").get(version_handler::get_default_version);

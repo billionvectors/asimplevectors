@@ -2,20 +2,26 @@
 
 set -o errexit
 
-# Check for the '--single' parameter
-SINGLE_NODE=false
-if [ "$2" = "--single" ] || [ "$3" = "--single" ]; then
-    SINGLE_NODE=true
-    echo "Running in single node mode"
-fi
-
+SINGLE_MODE=false
 BUILD_MODE="debug"
-# Check if '--release' parameter is provided
-if [ "$2" = "--release" ] || [ "$3" = "--release" ]; then
-  BUILD_MODE="release"
-fi
+LOGLEVEL="info"
 
-TARGET=$1
+for arg in "$@"; do
+  case $arg in
+    --single)
+      SINGLE_MODE=true
+      echo "Running in single node mode"
+      ;;
+    --release)
+      BUILD_MODE="release"
+      echo "Release Build mode"
+      ;;
+    --loglevel=*)
+      LOGLEVEL="${arg#*=}"
+      echo "Log level set to $LOGLEVEL"
+      ;;
+  esac
+done
 
 # Check if the current directory ends with '/tests'
 if [[ "$current_dir" == */tests ]]; then
@@ -97,13 +103,18 @@ sleep 1
 
 if ls 127.0.0.1:*.db
 then
-    rm -r 127.0.0.1:*.db || echo "no db to clean"
+    rm -r 127.0.0.1:*.db
 fi
 
-if [ "$SINGLE_NODE" = true ]; then
+if ls 0.0.0.0:*.db
+then
+    rm -r 0.0.0.0:*.db
+fi
+
+if [ "$SINGLE_MODE" = true ]; then
     echo "Start a single-node asimplevectors server..."
 
-    ${bin} --id 1 --http-addr 127.0.0.1:21001 --rpc-addr 127.0.0.1:22001 --enable_security 1 2>&1 > logs/n1.log &
+    ${bin} --id 1 --http-addr 127.0.0.1:21001 --rpc-addr 127.0.0.1:22001 --log_level $LOGLEVEL --enable_security 1 2>&1 > logs/n1.log &
     PID1=$!
     sleep 1
     echo "Server 1 started"
@@ -126,16 +137,16 @@ if [ "$SINGLE_NODE" = true ]; then
 else
     echo "Start 3 uninitialized asimplevectors servers..."
 
-    ${bin} --id 1 --http-addr 127.0.0.1:21001 --rpc-addr 127.0.0.1:22001 --enable_security 1 2>&1 > logs/n1.log &
+    ${bin} --id 1 --http-addr 127.0.0.1:21001 --rpc-addr 127.0.0.1:22001 --log_level $LOGLEVEL --enable_security 1 2>&1 > logs/n1.log &
     PID1=$!
     sleep 1
     echo "Server 1 started"
 
-    nohup ${bin} --id 2 --http-addr 127.0.0.1:21002 --rpc-addr 127.0.0.1:22002 --enable_security 1 2>&1 >> logs/n2.log &
+    nohup ${bin} --id 2 --http-addr 127.0.0.1:21002 --rpc-addr 127.0.0.1:22002 --log_level $LOGLEVEL --enable_security 1 2>&1 >> logs/n2.log &
     sleep 1
     echo "Server 2 started"
 
-    nohup ${bin} --id 3 --http-addr 127.0.0.1:21003 --rpc-addr 127.0.0.1:22003 --enable_security 1 2>&1 >> logs/n3.log &
+    nohup ${bin} --id 3 --http-addr 127.0.0.1:21003 --rpc-addr 127.0.0.1:22003 --log_level $LOGLEVEL --enable_security 1 2>&1 >> logs/n3.log &
     sleep 1
     echo "Server 3 started"
     sleep 1
@@ -187,10 +198,10 @@ else
     sleep 1
 fi
 
-if [ "$SINGLE_NODE" = true ]; then
-    python ./tests/test_security.py --single
+if [ "$SINGLE_MODE" = true ]; then
+    python ./example/test_security.py --single
 else
-    python ./tests/test_security.py
+    python ./example/test_security.py
 fi
 
 # Continue with the rest of the script...

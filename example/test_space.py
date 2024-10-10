@@ -119,9 +119,6 @@ def run_test(host, singlenode):
     time.sleep(1)
 
     # Step 2: Read on every node, including the leader
-    print("Read on every node, including the leader")
-    time.sleep(1)
-
     print("Read from node 1")
     get_request(f"{host}21001/api/space/spacename")
     time.sleep(1)
@@ -134,6 +131,40 @@ def run_test(host, singlenode):
         print("Read from node 3")
         get_request(f"{host}21003/api/space/spacename")
         time.sleep(1)
+
+    # Step 3: list api
+    print("Call List api")
+    time.sleep(1)
+
+    print("Read from node 1")
+    get_request(f"{host}21001/api/spaces")
+    time.sleep(1)
+
+    if not singlenode:
+        print("Read from node 2")
+        get_request(f"{host}21002/api/spaces")
+        time.sleep(1)
+
+        print("Read from node 3")
+        get_request(f"{host}21003/api/spaces")
+        time.sleep(1)
+
+    # Step 4: Update space
+    update_space_data = {
+        "dense": {
+            "dimension": 1234,
+            "metric": "l2",
+            "hnsw_config": {
+                "m": 64,
+                "ef_construct": 55
+            }
+        }
+    }
+
+    post_request(f"{host}21001/api/space/spacename", update_space_data)
+    print("Read from node 1")
+    get_request(f"{host}21001/api/space/spacename")
+    time.sleep(1)
 
 def main():
     # Argument parser for host, singlenode, and PID1
