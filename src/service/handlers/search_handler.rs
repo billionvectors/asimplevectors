@@ -5,6 +5,15 @@ use serde_json::json;
 use crate::config::Config;
 use crate::raft_cluster::app::App;
 
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+
+use crate::service::handlers::dto::search_dto::{
+    SearchRequest, SearchResponse, SearchErrorResponse
+};
+
 // Helper function to check search permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {
     req.header("Authorization")
@@ -36,6 +45,15 @@ async fn check_write_permission(req: &Request<Arc<App>>) -> tide::Result<bool> {
 }
 
 // POST /api/space/{space_name}/search
+#[utoipa::path(
+    post,
+    path = "/api/space/{space_name}/search",
+    request_body = SearchRequest,
+    responses(
+        (status = 200, description = "Search results successfully retrieved", body = [SearchResponse]),
+        (status = 403, description = "Forbidden", body = SearchErrorResponse)
+    )
+)]
 pub async fn search(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -69,6 +87,15 @@ pub async fn search(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // POST /api/space/{space_name}/version/{version_id}/search
+#[utoipa::path(
+    post,
+    path = "/api/space/{space_name}/version/{version_id}/search",
+    request_body = SearchRequest,
+    responses(
+        (status = 200, description = "Search results successfully retrieved", body = [SearchResponse]),
+        (status = 403, description = "Forbidden", body = SearchErrorResponse)
+    )
+)]
 pub async fn search_with_version(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(

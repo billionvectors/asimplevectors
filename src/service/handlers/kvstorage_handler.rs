@@ -12,6 +12,9 @@ use crate::raft_cluster::app::App;
 use crate::raft_cluster::store::Request as RaftRequest;
 use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
 
+use crate::service::handlers::dto::keyvalue_dto::{
+    KeyValueRequest, KeyValueResponse, KeyValueErrorResponse, ListKeysResponse};
+
 // Helper function to check keyvalue permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {
     req.header("Authorization")
@@ -43,6 +46,15 @@ async fn check_write_permission(req: &Request<Arc<App>>) -> tide::Result<bool> {
 }
 
 // POST /api/space/{space_name}/storage/{key}
+#[utoipa::path(
+    post,
+    path = "/api/space/{space_name}/storage/{key}",
+    request_body = KeyValueRequest,
+    responses(
+        (status = 200, description = "Key stored successfully", body = KeyValueResponse),
+        (status = 403, description = "Forbidden", body = KeyValueErrorResponse)
+    )
+)]
 pub async fn put_key(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -96,6 +108,15 @@ pub async fn put_key(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /api/space/{space_name}/storage/{key}
+#[utoipa::path(
+    get,
+    path = "/api/space/{space_name}/storage/{key}",
+    responses(
+        (status = 200, description = "Key retrieved successfully", body = String),
+        (status = 403, description = "Forbidden", body = KeyValueErrorResponse),
+        (status = 404, description = "Key not found", body = KeyValueErrorResponse)
+    )
+)]
 pub async fn get_key(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -157,6 +178,15 @@ pub async fn get_key(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // DELETE /api/space/{space_name}/storage/{key}
+#[utoipa::path(
+    delete,
+    path = "/api/space/{space_name}/storage/{key}",
+    request_body = KeyValueRequest,
+    responses(
+        (status = 200, description = "Key deleted successfully", body = KeyValueResponse),
+        (status = 403, description = "Forbidden", body = KeyValueErrorResponse)
+    )
+)]
 pub async fn remove_key(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -211,6 +241,14 @@ pub async fn remove_key(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /api/space/{space_name}/storage_keys
+#[utoipa::path(
+    get,
+    path = "/api/space/{space_name}/storage_keys",
+    responses(
+        (status = 200, description = "Keys listed successfully", body = ListKeysResponse),
+        (status = 403, description = "Forbidden", body = KeyValueErrorResponse)
+    )
+)]
 pub async fn list_keys(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(

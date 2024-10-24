@@ -16,6 +16,7 @@ use network::Network;
 use store::new_storage;
 use store::Request;
 use store::Response;
+use async_std::process::exit;
 
 pub mod app;
 pub mod client;
@@ -80,10 +81,22 @@ pub async fn start_example_raft_node<P>(
 where
     P: AsRef<Path>,
 {
+    if (crate::Config::raft_heartbeat_interval() > crate::Config::raft_election_timeout()) {
+        tracing::error!("Heatbeat interval shoud be lower than Election Timeout: election_timeout={}, heartbeat_interval={}",
+            crate::Config::raft_election_timeout(), crate::Config::raft_heartbeat_interval());
+        exit(-1);
+    }
+
+    if (crate::Config::raft_heartbeat_interval() >= 300) {
+        tracing::error!("Heatbeat interval is shoud be under 300: heartbeat_interval={}",
+            crate::Config::raft_heartbeat_interval());
+        exit(-1);
+    }
+
     // Create a configuration for the raft instance.
     let config = Config {
-        heartbeat_interval: 250,
-        election_timeout_min: 299,
+        heartbeat_interval: crate::Config::raft_heartbeat_interval(),
+        election_timeout_min: crate::Config::raft_election_timeout(),
         ..Default::default()
     };
 

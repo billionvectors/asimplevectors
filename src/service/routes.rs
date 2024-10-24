@@ -16,18 +16,43 @@ use crate::service::handlers::{
     kvstorage_handler
 };
 
+use crate::service::handlers::dto::keyvalue_dto::{
+    KeyValueRequest, KeyValueResponse, KeyValueErrorResponse, ListKeysResponse};
+
+use crate::service::handlers::dto::search_dto::{
+    SearchRequest, SearchResponse, SearchErrorResponse};
+    
+use crate::service::handlers::dto::security_dto::{
+    RbacTokenRequest, RbacTokenResponse, RbacTokenErrorResponse, ListRbacTokensResponse, TokenDetails};
+
+use crate::service::handlers::dto::snapshot_dto::{
+    CreateSnapshotRequest, SnapshotResponse, SnapshotErrorResponse, ListSnapshotsResponse, SnapshotInfo};
+    
 use crate::service::handlers::dto::space_dto::{
     SpaceRequest, SpaceResponse, SpaceErrorResponse, 
     DenseConfig, HnswConfig, QuantizationConfig, 
     SparseConfig, ScalarQuantizationConfig, ProductQuantizationConfig,
-    VersionData, VectorIndexData, ListSpacesResponse, SpaceInfo,};
+    VersionData, VectorIndexData, ListSpacesResponse, SpaceInfo};
 
+use crate::service::handlers::dto::vector_dto::{
+    VectorData, VectorRequest, VectorResponse, VectorErrorResponse, GetVectorsResponse, VectorDataResponse};
+    
+use crate::service::handlers::dto::version_dto::{
+    VersionRequest, VersionResponse, VersionErrorResponse, ListVersionsResponse, VersionInfo};
+    
 async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Response> {
     // swagger config
     let swagger_config = Arc::new(utoipa_swagger_ui::Config::from("/api-docs/openapi.json"));
 
-    let path = request.url().path().to_string();
-    let tail = path.strip_prefix("/swagger-ui/").unwrap();
+    let mut path = request.url().path().to_string();
+    println!("path: {}", path);
+
+    // Ensure the path ends with a trailing slash if it's /swagger-ui
+    if path == "/swagger-ui" {
+        path.push_str("/");
+    }
+
+    let tail = path.strip_prefix("/swagger-ui/").unwrap_or_default();
 
     match utoipa_swagger_ui::serve(tail, swagger_config) {
         Ok(swagger_file) => swagger_file
@@ -41,24 +66,72 @@ async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Respons
         Err(error) => Ok(Response::builder(500).body(error.to_string()).build()),
     }
 }
+    
 
 pub fn build_openapi(app: &mut Server<Arc<App>>) {
+    if (!crate::Config::enable_swagger_ui()) {
+        return;
+    }
+
     #[derive(OpenApi)]
     #[openapi(
         paths(
+            kvstorage_handler::put_key,
+            kvstorage_handler::get_key,
+            kvstorage_handler::remove_key,
+            kvstorage_handler::list_keys,
+
+            search_handler::search,
+            search_handler::search_with_version,
+
+            security_handler::create_rbac_token,
+            security_handler::list_rbac_tokens,
+            security_handler::delete_rbac_token,
+            security_handler::update_rbac_token,
+
+            snapshot_handler::create_snapshot,
+            snapshot_handler::restore_snapshot,
+            snapshot_handler::list_snapshots,
+            snapshot_handler::delete_snapshots,
+            snapshot_handler::download_snapshot,
+
             space_handler::space,
             space_handler::get_space,
             space_handler::delete_space,
-            space_handler::list_spaces
+            space_handler::list_spaces,
+
+            vector_handler::vector,
+            vector_handler::vector_with_version,
+            vector_handler::get_vectors_by_version_id,
+
+            version_handler::create_version,
+            version_handler::get_version_by_id,
+            version_handler::get_version_by_name,
+            version_handler::get_default_version,
+            version_handler::list_versions,
         ),
         tags(
             (name = "space", description = "space items management endpoints.")
         ),
         components(
-            schemas(SpaceRequest, SpaceResponse, SpaceErrorResponse, 
+            schemas(
+                KeyValueRequest, KeyValueResponse, KeyValueErrorResponse, ListKeysResponse,
+
+                SearchRequest, SearchResponse, SearchErrorResponse,
+                
+                RbacTokenRequest, RbacTokenResponse, RbacTokenErrorResponse, ListRbacTokensResponse, TokenDetails,
+
+                CreateSnapshotRequest, SnapshotResponse, SnapshotErrorResponse, ListSnapshotsResponse, SnapshotInfo,
+
+                SpaceRequest, SpaceResponse, SpaceErrorResponse, 
                 DenseConfig, HnswConfig, QuantizationConfig, 
                 SparseConfig, ScalarQuantizationConfig, ProductQuantizationConfig,
-                VersionData, VectorIndexData, ListSpacesResponse, SpaceInfo)
+                VersionData, VectorIndexData, ListSpacesResponse, SpaceInfo,
+
+                VectorData, VectorRequest, VectorResponse, VectorErrorResponse, GetVectorsResponse, VectorDataResponse,
+
+                VersionRequest, VersionResponse, VersionErrorResponse, ListVersionsResponse, VersionInfo,
+            )
         )
     )]
     struct ApiDoc;
@@ -91,7 +164,7 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     api.at("/space/:space_name/versions").get(version_handler::list_versions);
     api.at("/space/:space_name/version/:version_id").get(version_handler::get_version_by_id);
     api.at("/space/:space_name/version/:version_name/by-name").get(version_handler::get_version_by_name);
-    api.at("/space/:space_name/version/default").get(version_handler::get_default_version);
+    api.at("/space/:space_name/version").get(version_handler::get_default_version);
     api.at("/space/:space_name/version").post(version_handler::create_version);
 
     // Vector endpoints (default index name is "default")
@@ -101,6 +174,7 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     api.at("/space/:space_name/version/:version_id/vector/:index_name").post(vector_handler::vector_with_version);
     api.at("/space/:space_name/version/:version_id/vectors").get(vector_handler::get_vectors_by_version_id);
     api.at("/space/:space_name/version/:version_id/vectors/:index_name").get(vector_handler::get_vectors_by_version_id);
+    api.at("/space/:space_name/vectors").get(vector_handler::get_vectors_by_default_version);
 
     // Search endpoints (default index name is "default")
     api.at("/space/:space_name/search").post(search_handler::search);

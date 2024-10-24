@@ -2,10 +2,19 @@ use std::sync::Arc;
 use tide::{Body, Request, Response, StatusCode};
 use serde_json::Value;
 use serde_json::json;
+
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+
 use crate::config::Config;
 use crate::raft_cluster::app::App;
 use crate::raft_cluster::store::Request as RaftRequest;
 use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
+
+use crate::service::handlers::dto::version_dto::{
+    VersionRequest, VersionResponse, VersionErrorResponse, ListVersionsResponse, VersionInfo};
 
 // Helper function to check snapshot permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {
@@ -38,7 +47,15 @@ async fn check_write_permission(req: &Request<Arc<App>>) -> tide::Result<bool> {
 }
 
 // POST /space/{space_name}/version
-// API to create a new version
+#[utoipa::path(
+    post,
+    path = "/space/{space_name}/version",
+    request_body = VersionRequest,
+    responses(
+        (status = 200, description = "Version created successfully", body = VersionResponse),
+        (status = 403, description = "Forbidden", body = VersionErrorResponse)
+    )
+)]
 pub async fn create_version(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -83,6 +100,15 @@ pub async fn create_version(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /space/{space_name}/version/{version_id}
+#[utoipa::path(
+    get,
+    path = "/space/{space_name}/version/{version_id}",
+    responses(
+        (status = 200, description = "Version details retrieved successfully", body = VersionResponse),
+        (status = 403, description = "Forbidden", body = VersionErrorResponse),
+        (status = 404, description = "Version not found", body = VersionErrorResponse)
+    )
+)]
 pub async fn get_version_by_id(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -107,6 +133,15 @@ pub async fn get_version_by_id(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /space/{space_name}/version/{version_name}/by-name
+#[utoipa::path(
+    get,
+    path = "/space/{space_name}/version/{version_name}/by-name",
+    responses(
+        (status = 200, description = "Version details retrieved successfully", body = VersionResponse),
+        (status = 403, description = "Forbidden", body = VersionErrorResponse),
+        (status = 404, description = "Version not found", body = VersionErrorResponse)
+    )
+)]
 pub async fn get_version_by_name(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -131,6 +166,15 @@ pub async fn get_version_by_name(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /space/{space_name}/version/default
+#[utoipa::path(
+    get,
+    path = "/space/{space_name}/version/default",
+    responses(
+        (status = 200, description = "Version details retrieved successfully", body = VersionResponse),
+        (status = 403, description = "Forbidden", body = VersionErrorResponse),
+        (status = 404, description = "Version not found", body = VersionErrorResponse)
+    )
+)]
 pub async fn get_default_version(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -154,6 +198,14 @@ pub async fn get_default_version(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /space/{space_name}/versions
+#[utoipa::path(
+    get,
+    path = "/space/{space_name}/versions",
+    responses(
+        (status = 200, description = "Versions listed successfully", body = ListVersionsResponse),
+        (status = 403, description = "Forbidden", body = VersionErrorResponse)
+    )
+)]
 pub async fn list_versions(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(

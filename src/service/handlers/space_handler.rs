@@ -14,7 +14,8 @@ use crate::raft_cluster::app::App;
 use crate::raft_cluster::store::Request as RaftRequest;
 use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
 
-use crate::service::handlers::dto::space_dto::{SpaceRequest, SpaceResponse, SpaceErrorResponse};
+use crate::service::handlers::dto::space_dto::{
+    SpaceRequest, SpaceResponse, SpaceErrorResponse};
 
 // Helper function to check snapshot permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {

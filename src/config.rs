@@ -90,6 +90,12 @@ impl Config {
                     .help("Enable or disable security (1: enable or 0: disable)"),
             )
             .arg(
+                Arg::new("enable_swagger_ui")
+                    .long("enable_swagger_ui")
+                    .action(ArgAction::SetTrue)
+                    .help("Enable or disable Swagger UI (true: enable, false: disable)"),
+            )
+            .arg(
                 Arg::new("id")
                     .long("id")
                     .action(ArgAction::Set)
@@ -106,6 +112,18 @@ impl Config {
                     .long("rpc-addr")
                     .action(ArgAction::Set)
                     .help("Set the RPC address"),
+            )
+            .arg(
+                Arg::new("raft_heartbeat_interval")
+                    .long("raft_heartbeat_interval")
+                    .action(ArgAction::Set)
+                    .help("Set the Raft heartbeat interval (ms)"),
+            )
+            .arg(
+                Arg::new("raft_election_timeout")
+                    .long("raft_election_timeout")
+                    .action(ArgAction::Set)
+                    .help("Set the Raft election timeout (ms)"),
             )
             .get_matches();
 
@@ -154,6 +172,10 @@ impl Config {
             env::set_var("ATV_ENABLE_SECURITY", value);
         }
 
+        if matches.get_flag("enable_swagger_ui") {
+            env::set_var("ATV_ENABLE_SWAGGER_UI", "true");
+        }
+
         if let Some(value) = matches.get_one::<String>("id") {
             env::set_var("ATV_INSTANCE_ID", value);
         }
@@ -164,6 +186,14 @@ impl Config {
 
         if let Some(value) = matches.get_one::<String>("rpc_addr") {
             env::set_var("ATV_RPC_ADDR", value);
+        }
+
+        if let Some(value) = matches.get_one::<String>("raft_heartbeat_interval") {
+            env::set_var("ATV_RAFT_HEARTBEAT_INTERVAL", value);
+        }
+
+        if let Some(value) = matches.get_one::<String>("raft_election_timeout") {
+            env::set_var("ATV_RAFT_ELECTION_TIMEOUT", value);
         }
     }
 
@@ -232,6 +262,13 @@ impl Config {
             .unwrap_or(0)
     }
 
+    pub fn enable_swagger_ui() -> bool {
+        env::var("ATV_ENABLE_SWAGGER_UI")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse::<bool>()
+            .unwrap_or(false)
+    }
+
     pub fn instance_id() -> u64 {
         env::var("ATV_INSTANCE_ID")
         .unwrap_or_else(|_| "1".to_string())
@@ -247,73 +284,22 @@ impl Config {
         env::var("ATV_RPC_ADDR").unwrap_or_else(|_| "0.0.0.0:22001".to_string())
     }
 
+    pub fn raft_heartbeat_interval() -> u64 {
+        env::var("ATV_RAFT_HEARTBEAT_INTERVAL")
+            .unwrap_or_else(|_| "250".to_string())
+            .parse::<u64>()
+            .unwrap_or(250)
+    }
+
+    pub fn raft_election_timeout() -> u64 {
+        env::var("ATV_RAFT_ELECTION_TIMEOUT")
+            .unwrap_or_else(|_| "299".to_string())
+            .parse::<u64>()
+            .unwrap_or(299)
+    }
+
     /// Method to get the singleton Config instance
     pub fn get_config() -> &'static Mutex<Config> {
         &CONFIG
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::Once;
-
-    static INIT: Once = Once::new();
-
-    fn setup() {
-        INIT.call_once(|| {
-            Config::initialize();
-        });
-    }
-
-    #[test]
-    fn test_default_values() {
-        setup();
-        // Ensure default values are loaded from environment variables
-        assert_eq!(Config::cache_capacity(), 100);
-        assert_eq!(Config::db_name(), ":memory:");
-        assert_eq!(Config::log_file(), "logs/atinyvectors.log");
-        assert_eq!(Config::log_level(), "info");
-        assert_eq!(Config::default_m(), 16);
-        assert_eq!(Config::ef_construction(), 100);
-        assert_eq!(Config::max_datasize(), 1_000_000);
-        assert_eq!(Config::data_path(), "data/");
-        assert_eq!(Config::token_expire_days(), 30);
-        assert_eq!(
-            Config::jwt_token_key(),
-            "atinyvectors_jwt_token_key_is_really_good_and_i_hope_so_much_whatever_you_want"
-        );
-        assert_eq!(Config::enable_security(), 0);
-    }
-
-    #[test]
-    fn test_override_env_values() {
-        // Set environment variables
-        env::set_var("ATV_HNSW_INDEX_CACHE_CAPACITY", "200");
-        env::set_var("ATV_DB_NAME", "test_db");
-        env::set_var("ATV_LOG_FILE", "test.log");
-        env::set_var("ATV_LOG_LEVEL", "debug");
-        env::set_var("ATV_DEFAULT_M", "32");
-        env::set_var("ATV_DEFAULT_EF_CONSTRUCTION", "200");
-        env::set_var("ATV_HNSW_MAX_DATASIZE", "2000000");
-        env::set_var("ATV_DATA_PATH", "test_data/");
-        env::set_var("ATV_DEFAULT_TOKEN_EXPIRE_DAYS", "60");
-        env::set_var("ATV_JWT_TOKEN_KEY", "test_key");
-        env::set_var("ATV_ENABLE_SECURITY", "1");
-
-        Config::initialize(); // Re-initialize to pick up new env vars
-
-        // Ensure updated values are loaded correctly
-        assert_eq!(Config::cache_capacity(), 200);
-        assert_eq!(Config::db_name(), "test_db");
-        assert_eq!(Config::log_file(), "test.log");
-        assert_eq!(Config::log_level(), "debug");
-        assert_eq!(Config::default_m(), 32);
-        assert_eq!(Config::ef_construction(), 200);
-        assert_eq!(Config::max_datasize(), 2_000_000);
-        assert_eq!(Config::data_path(), "test_data/");
-        assert_eq!(Config::token_expire_days(), 60);
-        assert_eq!(Config::jwt_token_key(), "test_key");
-        assert_eq!(Config::enable_security(), 1);
     }
 }

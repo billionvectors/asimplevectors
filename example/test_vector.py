@@ -92,7 +92,7 @@ def run_test(host, singlenode):
 
     # Step 3: Get vectors by version ID on node 1 (default version)
     print("Get vectors by version ID on node 1")
-    get_request(f"{host}21001/api/space/spacename/version/default/vectors")
+    get_request(f"{host}21001/api/space/spacename/vectors")
     time.sleep(1)
 
     # Step 4: Upsert vectors to 'spacename' with specific version ID

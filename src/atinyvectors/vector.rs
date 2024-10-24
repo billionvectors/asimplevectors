@@ -17,7 +17,12 @@ extern "C" {
         version_id: i32,
         json_str: *const c_char,
     );
-    pub fn atv_vector_dto_get_vectors_by_version_id(manager: *mut VectorDTOManager, version_id: i32) -> *mut c_char;
+    pub fn atv_vector_dto_get_vectors_by_version_id(
+        manager: *mut VectorDTOManager, 
+        space_name: *const c_char,
+        version_id: i32, 
+        start: i32, 
+        limit: i32) -> *mut c_char;
 }
 
 // Safe Rust wrapper for VectorDTOManager
@@ -41,9 +46,11 @@ impl VectorDTOManagerWrapper {
         Ok(())
     }
 
-    pub fn get_vectors_by_version_id(&self, version_id: i32) -> Result<String, String> {
+    pub fn get_vectors_by_version_id(&self, space_name: &str, version_id: i32, start: i32, limit: i32) -> Result<String, String> {
+        let space_name_c = CString::new(space_name).unwrap();
+
         unsafe {
-            let result = atv_vector_dto_get_vectors_by_version_id(self.inner, version_id);
+            let result = atv_vector_dto_get_vectors_by_version_id(self.inner, space_name_c.as_ptr(), version_id, start, limit);
             if result.is_null() {
                 Err("Failed to extract vectors".to_string())
             } else {

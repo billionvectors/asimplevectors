@@ -17,6 +17,9 @@ use crate::raft_cluster::app::App;
 use crate::raft_cluster::store::Request as RaftRequest;
 use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
 
+use crate::service::handlers::dto::snapshot_dto::{
+    CreateSnapshotRequest, SnapshotResponse, SnapshotErrorResponse, ListSnapshotsResponse, SnapshotInfo};
+
 // Helper function to check snapshot permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {
     req.header("Authorization")
@@ -48,6 +51,15 @@ async fn check_write_permission(req: &Request<Arc<App>>) -> tide::Result<bool> {
 }
 
 // POST /snapshot
+#[utoipa::path(
+    post,
+    path = "/snapshot",
+    request_body = CreateSnapshotRequest,
+    responses(
+        (status = 200, description = "Snapshot created successfully", body = SnapshotResponse),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
 pub async fn create_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(Response::builder(StatusCode::Forbidden)
@@ -86,6 +98,14 @@ pub async fn create_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // POST /snapshot/{file_name}/restore
+#[utoipa::path(
+    post,
+    path = "/snapshot/{file_name}/restore",
+    responses(
+        (status = 200, description = "Snapshot restored successfully", body = SnapshotResponse),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
 pub async fn restore_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -132,6 +152,14 @@ pub async fn restore_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /snapshots
+#[utoipa::path(
+    get,
+    path = "/snapshots",
+    responses(
+        (status = 200, description = "List of snapshots retrieved successfully", body = ListSnapshotsResponse),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
 pub async fn list_snapshots(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(
@@ -156,6 +184,14 @@ pub async fn list_snapshots(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // DELETE /snapshots/delete
+#[utoipa::path(
+    delete,
+    path = "/snapshots/delete",
+    responses(
+        (status = 200, description = "Snapshots deleted successfully", body = SnapshotResponse),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
 pub async fn delete_snapshots(req: Request<Arc<App>>) -> tide::Result {
     if !check_write_permission(&req).await? {
         return Ok(
@@ -181,6 +217,14 @@ pub async fn delete_snapshots(req: Request<Arc<App>>) -> tide::Result {
 }
 
 // GET /snapshot/{file_name}/download
+#[utoipa::path(
+    get,
+    path = "/snapshot/{file_name}/download",
+    responses(
+        (status = 200, description = "Snapshot downloaded successfully", body = String),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
 pub async fn download_snapshot(req: Request<Arc<App>>) -> tide::Result {
     if !check_read_permission(&req).await? {
         return Ok(

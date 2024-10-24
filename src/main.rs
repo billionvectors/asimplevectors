@@ -3,6 +3,7 @@ mod atinyvectors;
 mod raft_cluster;
 mod service;
 mod config;
+mod tests;
 
 use dotenv::dotenv;
 use config::Config;
