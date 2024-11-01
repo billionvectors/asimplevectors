@@ -91,8 +91,9 @@ pub fn build_openapi(app: &mut Server<Arc<App>>) {
 
             snapshot_handler::create_snapshot,
             snapshot_handler::restore_snapshot,
+            snapshot_handler::delete_snapshot,
             snapshot_handler::list_snapshots,
-            snapshot_handler::delete_snapshots,
+            snapshot_handler::delete_all_snapshots,
             snapshot_handler::download_snapshot,
 
             space_handler::space,
@@ -186,9 +187,10 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     api.at("/snapshot").post(snapshot_handler::create_snapshot);
     api.at("/snapshot/:file_name/download").get(snapshot_handler::download_snapshot);
     api.at("/snapshot/:file_name/restore").post(snapshot_handler::restore_snapshot);
+    api.at("/snapshot/:file_name/delete").delete(snapshot_handler::delete_snapshot);
     api.at("/snapshots").get(snapshot_handler::list_snapshots);
-    api.at("/snapshots/delete").delete(snapshot_handler::delete_snapshots);
     api.at("/snapshots/restore").post(snapshot_handler::restore_snapshot_from_upload);
+    api.at("/snapshot/delete_all").delete(snapshot_handler::delete_all_snapshots);
 
     // Security endpoints
     api.at("/security/tokens").post(security_handler::create_rbac_token);

@@ -9,31 +9,32 @@ use async_std::stream::StreamExt;
 
 use crate::Config;
 
-// FFI declaration for SnapshotDTOManager
+// FFI declaration for SnapshotServiceManager
 #[derive(Clone, Debug)]
 #[repr(C)]
-pub struct SnapshotDTOManager {
+pub struct SnapshotServiceManager {
     _private: [u8; 0],
 }
 
 extern "C" {
-    pub fn atv_snapshot_dto_manager_new() -> *mut SnapshotDTOManager;
-    pub fn atv_snapshot_dto_manager_free(manager: *mut SnapshotDTOManager);
-    pub fn atv_snapshot_dto_create_snapshot(manager: *mut SnapshotDTOManager, json_str: *const c_char);
-    pub fn atv_snapshot_dto_restore_snapshot(manager: *mut SnapshotDTOManager, file_name: *const c_char);
-    pub fn atv_snapshot_dto_list_snapshots(manager: *mut SnapshotDTOManager) -> *mut c_char;
-    pub fn atv_snapshot_dto_delete_snapshots(manager: *mut SnapshotDTOManager);
+    pub fn atv_snapshot_service_manager_new() -> *mut SnapshotServiceManager;
+    pub fn atv_snapshot_service_manager_free(manager: *mut SnapshotServiceManager);
+    pub fn atv_snapshot_service_create_snapshot(manager: *mut SnapshotServiceManager, json_str: *const c_char);
+    pub fn atv_snapshot_service_restore_snapshot(manager: *mut SnapshotServiceManager, file_name: *const c_char);
+    pub fn atv_snapshot_service_delete_snapshot(manager: *mut SnapshotServiceManager, file_name: *const c_char);
+    pub fn atv_snapshot_service_list_snapshots(manager: *mut SnapshotServiceManager) -> *mut c_char;
+    pub fn atv_snapshot_service_delete_snapshots(manager: *mut SnapshotServiceManager);
 }
 
-// Safe Rust wrapper for SnapshotDTOManager
+// Safe Rust wrapper for SnapshotServiceManager
 #[derive(Clone, Debug)]
-pub struct SnapshotDTOManagerWrapper {
-    inner: *mut SnapshotDTOManager,
+pub struct SnapshotServiceManagerWrapper {
+    inner: *mut SnapshotServiceManager,
 }
 
-impl SnapshotDTOManagerWrapper {
+impl SnapshotServiceManagerWrapper {
     pub fn new() -> Self {
-        unsafe { SnapshotDTOManagerWrapper { inner: atv_snapshot_dto_manager_new() } }
+        unsafe { SnapshotServiceManagerWrapper { inner: atv_snapshot_service_manager_new() } }
     }
 
     fn to_ascii_string(input: &str) -> Result<String, std::string::FromUtf8Error> {
@@ -54,7 +55,7 @@ impl SnapshotDTOManagerWrapper {
     pub fn create_snapshot(&self, json_str: &str) -> Result<(), String> {
         let json_str_c = CString::new(json_str).unwrap();
         unsafe {
-            atv_snapshot_dto_create_snapshot(self.inner, json_str_c.as_ptr());
+            atv_snapshot_service_create_snapshot(self.inner, json_str_c.as_ptr());
         };
 
         Ok(())
@@ -64,7 +65,17 @@ impl SnapshotDTOManagerWrapper {
         let file_name_str_c = CString::new(
             Self::to_ascii_string(file_name_str).unwrap().as_str()).unwrap();
         unsafe {
-            atv_snapshot_dto_restore_snapshot(self.inner, file_name_str_c.as_ptr());
+            atv_snapshot_service_restore_snapshot(self.inner, file_name_str_c.as_ptr());
+        };
+
+        Ok(())
+    }
+
+    pub fn delete_snapshot(&self, file_name_str: &str) -> Result<(), String> {
+        let file_name_str_c = CString::new(
+            Self::to_ascii_string(file_name_str).unwrap().as_str()).unwrap();
+        unsafe {
+            atv_snapshot_service_delete_snapshot(self.inner, file_name_str_c.as_ptr());
         };
 
         Ok(())
@@ -72,7 +83,7 @@ impl SnapshotDTOManagerWrapper {
 
     pub fn list_snapshots(&self) -> Result<String, String> {
         unsafe {
-            let result = atv_snapshot_dto_list_snapshots(self.inner);
+            let result = atv_snapshot_service_list_snapshots(self.inner);
             if result.is_null() {
                 Err("Failed to list snapshots".to_string())
             } else {
@@ -85,7 +96,7 @@ impl SnapshotDTOManagerWrapper {
 
     pub fn delete_snapshots(&self)-> Result<(), String> {
         unsafe {
-            atv_snapshot_dto_delete_snapshots(self.inner);
+            atv_snapshot_service_delete_snapshots(self.inner);
         };
 
         Ok(())
@@ -140,13 +151,13 @@ impl SnapshotDTOManagerWrapper {
     }
 }
 
-impl Drop for SnapshotDTOManagerWrapper {
+impl Drop for SnapshotServiceManagerWrapper {
     fn drop(&mut self) {
         unsafe {
-            atv_snapshot_dto_manager_free(self.inner);
+            atv_snapshot_service_manager_free(self.inner);
         }
     }
 }
 
-unsafe impl Send for SnapshotDTOManagerWrapper {}
-unsafe impl Sync for SnapshotDTOManagerWrapper {}
+unsafe impl Send for SnapshotServiceManagerWrapper {}
+unsafe impl Sync for SnapshotServiceManagerWrapper {}

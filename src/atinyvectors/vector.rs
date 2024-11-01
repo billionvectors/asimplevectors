@@ -1,46 +1,46 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-// FFI declaration for VectorDTOManager
+// FFI declaration for VectorServiceManager
 #[derive(Clone, Debug)]
 #[repr(C)]
-pub struct VectorDTOManager {
+pub struct VectorServiceManager {
     _private: [u8; 0],
 }
 
 extern "C" {
-    pub fn atv_vector_dto_manager_new() -> *mut VectorDTOManager;
-    pub fn atv_vector_dto_manager_free(manager: *mut VectorDTOManager);
-    pub fn atv_vector_dto_upsert(
-        manager: *mut VectorDTOManager,
+    pub fn atv_vector_service_manager_new() -> *mut VectorServiceManager;
+    pub fn atv_vector_service_manager_free(manager: *mut VectorServiceManager);
+    pub fn atv_vector_service_upsert(
+        manager: *mut VectorServiceManager,
         space_name: *const c_char,
         version_id: i32,
         json_str: *const c_char,
     );
-    pub fn atv_vector_dto_get_vectors_by_version_id(
-        manager: *mut VectorDTOManager, 
+    pub fn atv_vector_service_get_vectors_by_version_id(
+        manager: *mut VectorServiceManager, 
         space_name: *const c_char,
         version_id: i32, 
         start: i32, 
         limit: i32) -> *mut c_char;
 }
 
-// Safe Rust wrapper for VectorDTOManager
+// Safe Rust wrapper for VectorServiceManager
 #[derive(Clone, Debug)]
-pub struct VectorDTOManagerWrapper {
-    inner: *mut VectorDTOManager,
+pub struct VectorServiceManagerWrapper {
+    inner: *mut VectorServiceManager,
 }
 
-impl VectorDTOManagerWrapper {
+impl VectorServiceManagerWrapper {
     pub fn new() -> Self {
-        unsafe { VectorDTOManagerWrapper { inner: atv_vector_dto_manager_new() } }
+        unsafe { VectorServiceManagerWrapper { inner: atv_vector_service_manager_new() } }
     }
 
     pub fn upsert_vectors(&self, space_name: &str, version_id: i32, json_str: &str) -> Result<(), String> {
         let space_name_c = CString::new(space_name).unwrap();
         let json_str_c = CString::new(json_str).unwrap();
         unsafe {
-            atv_vector_dto_upsert(self.inner, space_name_c.as_ptr(), version_id, json_str_c.as_ptr());
+            atv_vector_service_upsert(self.inner, space_name_c.as_ptr(), version_id, json_str_c.as_ptr());
         };
 
         Ok(())
@@ -50,7 +50,7 @@ impl VectorDTOManagerWrapper {
         let space_name_c = CString::new(space_name).unwrap();
 
         unsafe {
-            let result = atv_vector_dto_get_vectors_by_version_id(self.inner, space_name_c.as_ptr(), version_id, start, limit);
+            let result = atv_vector_service_get_vectors_by_version_id(self.inner, space_name_c.as_ptr(), version_id, start, limit);
             if result.is_null() {
                 Err("Failed to extract vectors".to_string())
             } else {
@@ -62,13 +62,13 @@ impl VectorDTOManagerWrapper {
     }
 }
 
-impl Drop for VectorDTOManagerWrapper {
+impl Drop for VectorServiceManagerWrapper {
     fn drop(&mut self) {
         unsafe {
-            atv_vector_dto_manager_free(self.inner);
+            atv_vector_service_manager_free(self.inner);
         }
     }
 }
 
-unsafe impl Send for VectorDTOManagerWrapper {}
-unsafe impl Sync for VectorDTOManagerWrapper {}
+unsafe impl Send for VectorServiceManagerWrapper {}
+unsafe impl Sync for VectorServiceManagerWrapper {}

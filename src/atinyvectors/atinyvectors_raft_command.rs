@@ -33,6 +33,8 @@ impl ATinyVectorsRaftCommand {
             "vector_with_version" => self.process_vector_with_version_command(request_obj).await,
             "create_snapshot" => self.process_create_snapshot_command(request_obj).await,
             "snapshot_restore" => self.process_snapshot_restore_command(request_obj).await,
+            "snapshot_delete" => self.process_snapshot_delete_command(request_obj).await,
+            "snapshot_sync" => self.process_snapshot_sync_command(request_obj).await,
             "create_rbac_token" => self.process_create_rbac_token_command(request_obj).await,
             "storage_put_key" => self.process_storage_put_key_command(request_obj).await,
             "storage_remove_key" => self.process_storage_remove_key_command(request_obj).await,
@@ -132,10 +134,30 @@ impl ATinyVectorsRaftCommand {
         }
     }
 
+    async fn process_snapshot_delete_command(&self, request_obj: &Value) {
+        let file_name = request_obj.get("file_name").and_then(|v| v.as_str()).unwrap_or("default");
+
+        tracing::debug!("Processing process_snapshot_delete_command command: {}", file_name);
+
+        if let Err(e) = self.atinyvectors_bo.snapshot.delete_snapshot(file_name) {
+            tracing::error!("Failed to delete snapshot: {}", e);
+        }
+    }
+
     async fn process_snapshot_restore_command(&self, request_obj: &Value) {
         let file_name = request_obj.get("file_name").and_then(|v| v.as_str()).unwrap_or("default");
 
         tracing::debug!("Processing snapshot_restore command: {}", file_name);
+
+        if let Err(e) = self.atinyvectors_bo.snapshot.restore_snapshot(file_name) {
+            tracing::error!("Failed to restore snapshot: {}", e);
+        }
+    }
+
+    async fn process_snapshot_sync_command(&self, request_obj: &Value) {
+        let file_name = request_obj.get("file_name").and_then(|v| v.as_str()).unwrap_or("default");
+
+        tracing::debug!("Processing snapshot_sync command: {}", file_name);
 
         if let Err(e) = self.atinyvectors_bo.snapshot.restore_snapshot(file_name) {
             tracing::error!("Failed to restore snapshot: {}", e);

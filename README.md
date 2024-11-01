@@ -17,6 +17,7 @@
 - **Key-Value Storage**: Built-in key-value storage functionality.
 - **Snapshot Support**: Offers snapshot capabilities for data backups and state saving.
 - **Dense & Sparse Vector Management**: Handles both dense and sparse vector types.
+- **Filtered Search**: Enables users to filter vectors by metadata attributes in search queries, allowing refined results based on custom conditions.
 
 ## Docs
 

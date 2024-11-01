@@ -151,6 +151,58 @@ pub async fn restore_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
     }
 }
 
+// DELETE /snapshot/{file_name}/delete
+#[utoipa::path(
+    delete,
+    path = "/snapshot/{file_name}/delete",
+    responses(
+        (status = 200, description = "Snapshots deleted successfully", body = SnapshotResponse),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
+pub async fn delete_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
+    if !check_write_permission(&req).await? {
+        return Ok(
+            Response::builder(StatusCode::Forbidden)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": "Forbidden"}))?)
+                .build());
+    }
+
+    let file_name = req.param("file_name").unwrap_or("default").to_string();
+    let file_name = format!("snapshot-{}.zip", file_name);
+    tracing::info!("delete_snapshot: file_name={}", file_name);
+    
+    let wrapped_body = json!({
+        "request": {
+            "command": "snapshot_delete",
+            "file_name": file_name,
+        }
+    });
+
+    let raft_req = RaftRequest::Set {
+        key: "snapshot_delete".to_string(),
+        value: serde_json::to_string(&wrapped_body)?,
+    };
+
+    // Send a write request to the Raft client
+    let res = req.state().raft.client_write(raft_req).await;
+
+    // Handle response
+    match res {
+        Ok(_) => Ok(
+            Response::builder(StatusCode::Ok)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"result": "success"}))?)
+                .build()),
+        Err(e) => Ok(
+            Response::builder(StatusCode::InternalServerError)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": e.to_string()}))?)
+                .build()),
+    }
+}
+
 // GET /snapshots
 #[utoipa::path(
     get,
@@ -180,39 +232,6 @@ pub async fn list_snapshots(req: Request<Arc<App>>) -> tide::Result {
         Err(e) => Ok(
             Response::builder(StatusCode::InternalServerError)
                 .body(Body::from_string(e)).build()),
-    }
-}
-
-// DELETE /snapshots/delete
-#[utoipa::path(
-    delete,
-    path = "/snapshots/delete",
-    responses(
-        (status = 200, description = "Snapshots deleted successfully", body = SnapshotResponse),
-        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
-    )
-)]
-pub async fn delete_snapshots(req: Request<Arc<App>>) -> tide::Result {
-    if !check_write_permission(&req).await? {
-        return Ok(
-            Response::builder(StatusCode::Forbidden)
-                .header("Content-Type", "application/json")
-                .body(Body::from_json(&json!({"error": "Forbidden"}))?)
-                .build());
-    }
-
-    let bo = req.state().atinyvectors_bo.clone();
-    let result = bo.snapshot.delete_snapshots();
-
-    match result {
-        Ok(_) => Ok(
-            Response::builder(StatusCode::Ok)
-                .header("Content-Type", "application/json")
-                .body(json!({"status": "Snapshots deleted successfully"})).build()),
-        Err(e) => Ok(
-            Response::builder(StatusCode::InternalServerError)
-                .header("Content-Type", "application/json")
-                .body(json!({"error": e})).build()),
     }
 }
 
@@ -392,10 +411,10 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
 
     let original_file_name = match original_file_name {
         Some(name) => name,
-        None => "snapshot.zip".to_string(),
+        None => "snapshot-{yyyymmdd}.zip".to_string(), // 
     };
 
-    let re = Regex::new(r"^snapshot-(?P<space>\w+)-(?P<version>\d+)-(?P<date>\d{8})\.zip$").map_err(|e| {
+    let re = Regex::new(r"^snapshot-(?P<date>\d{8})\.zip$").map_err(|e| {
         tide::Error::from_str(
             StatusCode::InternalServerError,
             format!("Failed to compile regex: {}", e),
@@ -413,22 +432,136 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
         }
     };
 
-    let space_name = caps.name("space").map_or(space_name_param.as_str(), |m| m.as_str());
-    let version_id: i32 = caps.name("version").and_then(|m| m.as_str().parse().ok()).unwrap_or(0);
+    tracing::debug!("Starting TODO implementation: copying snapshot file");
 
-    let bo = req.state().atinyvectors_bo.clone();
-    match bo.snapshot.restore_snapshot_from_upload(&file_path, &original_file_name, space_name, version_id)
-        .await
-    {
+    // 1. 스냅샷 디렉토리 경로 설정
+    let snapshot_dir = PathBuf::from(Config::data_path()).join("snapshot");
+    tracing::debug!("Snapshot directory path: {:?}", snapshot_dir);
+
+    // 2. 스냅샷 디렉토리가 존재하지 않으면 생성
+    if !snapshot_dir.exists().await {
+        tracing::debug!("Snapshot directory does not exist. Creating...");
+        fs::create_dir_all(&snapshot_dir).await.map_err(|e| {
+            tracing::error!("Failed to create snapshot directory: {}", e);
+            tide::Error::from_str(
+                StatusCode::InternalServerError,
+                format!("Failed to create snapshot directory: {}", e),
+            )
+        })?;
+        tracing::debug!("Snapshot directory created successfully");
+    }
+
+    // 3. 타겟 파일 경로 설정
+    let target_path = snapshot_dir.join(&original_file_name);
+    tracing::debug!("Target snapshot file path: {:?}", target_path);
+
+    // 4. 파일 복사
+    tracing::debug!("Copying file from {:?} to {:?}", file_path, target_path);
+    fs::copy(&file_path, &target_path).await.map_err(|e| {
+        tracing::error!("Failed to copy snapshot file: {}", e);
+        tide::Error::from_str(
+            StatusCode::InternalServerError,
+            format!("Failed to copy snapshot file: {}", e),
+        )
+    })?;
+    tracing::debug!("File copied successfully");
+
+    // 5. 임시 파일 삭제
+    tracing::debug!("Removing temporary file: {:?}", file_path);
+    fs::remove_file(&file_path).await.map_err(|e| {
+        tracing::error!("Failed to remove temp file: {}", e);
+        tide::Error::from_str(
+            StatusCode::InternalServerError,
+            format!("Failed to remove temp file: {}", e),
+        )
+    })?;
+    tracing::debug!("Temporary file removed successfully");
+
+    // 6. 추가적인 스냅샷 복원 작업 수행
+    // 예: 스냅샷 파일을 압축 해제하고 데이터베이스를 복원하는 등의 작업
+    // 여기에 필요한 로직을 추가하세요.
+    tracing::debug!("Performing additional snapshot restoration tasks");
+
+    // --------------------- TODO 구현 끝 ---------------------
+
+    // 성공 응답 반환
+    tracing::debug!("Snapshot restored successfully. Preparing response");
+    Ok(
+        Response::builder(StatusCode::Ok)
+            .header("Content-Type", "application/json")
+            .body(json!({
+                "message": "Snapshot restored successfully",
+                "snapshot_file": original_file_name,
+            }))
+            .build(),
+    )
+    /*
+    let file_name = original_file_name.clone();
+    tracing::info!("restore_snapshot: file_name={}", file_name);
+    let body: Value = req.body_json().await?;
+
+    let wrapped_body = json!({
+        "request": {
+            "command": "snapshot_sync",
+            "value": body,
+            "file_name": file_name,
+        }
+    });
+
+    let raft_req = RaftRequest::Set {
+        key: "snapshot_sync".to_string(),
+        value: serde_json::to_string(&wrapped_body)?,
+    };
+
+    // Send a write request to the Raft client
+    let res = req.state().raft.client_write(raft_req).await;
+
+    // Handle response
+    match res {
         Ok(_) => Ok(
             Response::builder(StatusCode::Ok)
                 .header("Content-Type", "application/json")
-                .body(json!({"status": "Snapshot restored successfully"}))
+                .body(Body::from_json(&json!({"result": "success"}))?)
                 .build()),
         Err(e) => Ok(
             Response::builder(StatusCode::InternalServerError)
                 .header("Content-Type", "application/json")
-                .body(json!({"error": e}))
+                .body(Body::from_json(&json!({"error": e.to_string()}))?)
                 .build()),
+    }
+
+    */
+}
+
+// DELETE /snapshots/delete_all
+#[utoipa::path(
+    delete,
+    path = "/snapshots/delete_all",
+    responses(
+        (status = 200, description = "Snapshots deleted successfully", body = SnapshotResponse),
+        (status = 403, description = "Forbidden", body = SnapshotErrorResponse)
+    )
+)]
+pub async fn delete_all_snapshots(req: Request<Arc<App>>) -> tide::Result {
+    if !check_write_permission(&req).await? {
+        return Ok(
+            Response::builder(StatusCode::Forbidden)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": "Forbidden"}))?)
+                .build());
+    }
+
+    let bo = req.state().atinyvectors_bo.clone();
+    let result = bo.snapshot.delete_snapshots();
+
+    match result {
+        Ok(_) => Ok(
+            Response::builder(StatusCode::Ok)
+                .header("Content-Type", "application/json")
+                .body(json!({"status": "Snapshots deleted successfully"})).build()),
+        Err(e) => Ok(
+            Response::builder(StatusCode::InternalServerError)
+                .header("Content-Type", "application/json")
+                .body(json!({"error": e})).build()),
     }
 }

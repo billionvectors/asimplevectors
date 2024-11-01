@@ -1,41 +1,41 @@
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 
-// FFI declaration for RbacTokenDTOManager
+// FFI declaration for RbacTokenServiceManager
 #[derive(Clone, Debug)]
 #[repr(C)]
-pub struct RbacTokenDTOManager {
+pub struct RbacTokenServiceManager {
     _private: [u8; 0],
 }
 
 extern "C" {
-    pub fn atv_rbac_token_dto_manager_new() -> *mut RbacTokenDTOManager;
-    pub fn atv_rbac_token_dto_manager_free(manager: *mut RbacTokenDTOManager);
-    pub fn atv_rbac_token_get_system_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_space_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_version_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_vector_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_snapshot_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_search_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_security_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
-    pub fn atv_rbac_token_get_keyvalue_permission(manager: *mut RbacTokenDTOManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_service_manager_new() -> *mut RbacTokenServiceManager;
+    pub fn atv_rbac_token_service_manager_free(manager: *mut RbacTokenServiceManager);
+    pub fn atv_rbac_token_get_system_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_space_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_version_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_vector_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_snapshot_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_search_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_security_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
+    pub fn atv_rbac_token_get_keyvalue_permission(manager: *mut RbacTokenServiceManager, token: *const c_char) -> i32;
     
-    pub fn atv_rbac_token_new_token(manager: *mut RbacTokenDTOManager, json_str: *const c_char, token: *const c_char) -> *mut c_char;
-    pub fn atv_rbac_token_generate_jwt_token(manager: *mut RbacTokenDTOManager, expire_days: i32) -> *mut c_char;
-    pub fn atv_rbac_token_list_tokens(manager: *mut RbacTokenDTOManager) -> *mut c_char;
-    pub fn atv_rbac_token_delete_token(manager: *mut RbacTokenDTOManager, token: *const c_char);
-    pub fn atv_rbac_token_update_token(manager: *mut RbacTokenDTOManager, token: *const c_char, json_str: *const c_char);
+    pub fn atv_rbac_token_new_token(manager: *mut RbacTokenServiceManager, json_str: *const c_char, token: *const c_char) -> *mut c_char;
+    pub fn atv_rbac_token_generate_jwt_token(manager: *mut RbacTokenServiceManager, expire_days: i32) -> *mut c_char;
+    pub fn atv_rbac_token_list_tokens(manager: *mut RbacTokenServiceManager) -> *mut c_char;
+    pub fn atv_rbac_token_delete_token(manager: *mut RbacTokenServiceManager, token: *const c_char);
+    pub fn atv_rbac_token_update_token(manager: *mut RbacTokenServiceManager, token: *const c_char, json_str: *const c_char);
 }
 
-// Safe Rust wrapper for RbacTokenDTOManager
+// Safe Rust wrapper for RbacTokenServiceManager
 #[derive(Clone, Debug)]
-pub struct RbacTokenDTOManagerWrapper {
-    inner: *mut RbacTokenDTOManager,
+pub struct RbacTokenServiceManagerWrapper {
+    inner: *mut RbacTokenServiceManager,
 }
 
-impl RbacTokenDTOManagerWrapper {
+impl RbacTokenServiceManagerWrapper {
     pub fn new() -> Self {
-        unsafe { RbacTokenDTOManagerWrapper { inner: atv_rbac_token_dto_manager_new() } }
+        unsafe { RbacTokenServiceManagerWrapper { inner: atv_rbac_token_service_manager_new() } }
     }
 
     pub fn get_system_permission(&self, token: &str) -> i32 {
@@ -139,13 +139,13 @@ impl RbacTokenDTOManagerWrapper {
     }
 }
 
-impl Drop for RbacTokenDTOManagerWrapper {
+impl Drop for RbacTokenServiceManagerWrapper {
     fn drop(&mut self) {
         unsafe {
-            atv_rbac_token_dto_manager_free(self.inner);
+            atv_rbac_token_service_manager_free(self.inner);
         }
     }
 }
 
-unsafe impl Send for RbacTokenDTOManagerWrapper {}
-unsafe impl Sync for RbacTokenDTOManagerWrapper {}
+unsafe impl Send for RbacTokenServiceManagerWrapper {}
+unsafe impl Sync for RbacTokenServiceManagerWrapper {}

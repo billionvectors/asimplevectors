@@ -41,27 +41,27 @@ def test_search(host, single_node):
             {
                 "id": 1,
                 "data": [0.1, 0.2, 0.3, 0.4],
-                "metadata": {"label": "first"}
+                "metadata": {"meta": "first"}
             },
             {
                 "id": 2,
                 "data": [0.5, 0.6, 0.7, 0.8],
-                "metadata": {"label": "second"}
+                "metadata": {"meta": "second"}
             },
             {
                 "id": 3,
                 "data": [0.9, 0.8, 0.7, 0.6],
-                "metadata": {"label": "third"}
+                "metadata": {"meta": "third"}
             },
             {
                 "id": 4,
                 "data": [1.0, 0.1, 0.2, 0.3],
-                "metadata": {"label": "forth"}
+                "metadata": {"meta": "forth"}
             },
             {
                 "id": 5,
                 "data": [0.2, 0.3, 0.4, 0.3],
-                "metadata": {"label": "fivth"}
+                "metadata": {"meta": "fivth"}
             }
         ]
     }
@@ -104,6 +104,26 @@ def test_search(host, single_node):
         # Search with default version on node 3
         print("Search vectors with default version on node 3")
         post_request(f"{host}21003/api/space/spacename/search", search_data_default)
+        time.sleep(1)
+
+    # Step 5: Filter search with metadata
+    print("Filter search with metadata on node 1")
+    search_data_with_filter = {
+        "vector": [0.2, 0.3, 0.4, 0.3],
+        "filter": "meta == 'first' OR meta == 'second'"
+    }
+    post_request(f"{host}21001/api/space/spacename/search", search_data_with_filter)
+    time.sleep(1)
+
+    if not single_node:
+        # Filter search with metadata on node 2
+        print("Filter search with metadata on node 2")
+        post_request(f"{host}21002/api/space/spacename/search", search_data_with_filter)
+        time.sleep(1)
+
+        # Filter search with metadata on node 3
+        print("Filter search with metadata on node 3")
+        post_request(f"{host}21003/api/space/spacename/search", search_data_with_filter)
         time.sleep(1)
 
 def main():
