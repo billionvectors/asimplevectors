@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::sync::Arc;
 
 use async_std::fs;
@@ -11,6 +12,7 @@ use serde_json::Value;
 use serde_json::json;
 use futures::stream;
 use regex::Regex;
+use chrono::Local;
 
 use crate::config::Config;
 use crate::raft_cluster::app::App;
@@ -292,8 +294,6 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
                 .build());
     }
 
-    let space_name_param = req.param("space_name").unwrap_or("default").to_string();
-
     // Extract the Content-Type header
     let content_type = match req.header("Content-Type") {
         Some(cts) => {
@@ -353,6 +353,11 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     let mut file_path: Option<PathBuf> = None;
     let mut original_file_name: Option<String> = None;
 
+    let defaultFileName = {
+        let date = Local::now().format("%Y%m%d").to_string();
+        format!("snapshot-{}.zip", date)
+    };
+
     // Iterate through multipart fields
     while let Some(mut field) = multipart.next_field().await? {
         let field_name = field.name().unwrap_or("").to_string();
@@ -360,7 +365,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
         if field_name == "file" {
             let filename = match field.file_name() {
                 Some(name) => name.to_string(),
-                None => "snapshot.zip".to_string(),
+                None => defaultFileName.clone(),
             };
             original_file_name = Some(filename.clone());
 
@@ -411,7 +416,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
 
     let original_file_name = match original_file_name {
         Some(name) => name,
-        None => "snapshot-{yyyymmdd}.zip".to_string(), // 
+        None => defaultFileName.clone(),
     };
 
     let re = Regex::new(r"^snapshot-(?P<date>\d{8})\.zip$").map_err(|e| {
@@ -427,18 +432,15 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
             return Ok(
                 Response::builder(StatusCode::BadRequest)
                     .header("Content-Type", "application/json")
-                    .body(json!({"error": "Invalid filename format"}))
+                    .body(json!({"error": 
+                        format!("Invalid filename format: input={} / fileformat=snapshot-yyyymmdd.zip", original_file_name)}))
                     .build());
         }
     };
 
-    tracing::debug!("Starting TODO implementation: copying snapshot file");
-
-    // 1. 스냅샷 디렉토리 경로 설정
     let snapshot_dir = PathBuf::from(Config::data_path()).join("snapshot");
     tracing::debug!("Snapshot directory path: {:?}", snapshot_dir);
 
-    // 2. 스냅샷 디렉토리가 존재하지 않으면 생성
     if !snapshot_dir.exists().await {
         tracing::debug!("Snapshot directory does not exist. Creating...");
         fs::create_dir_all(&snapshot_dir).await.map_err(|e| {
@@ -451,11 +453,9 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
         tracing::debug!("Snapshot directory created successfully");
     }
 
-    // 3. 타겟 파일 경로 설정
     let target_path = snapshot_dir.join(&original_file_name);
     tracing::debug!("Target snapshot file path: {:?}", target_path);
 
-    // 4. 파일 복사
     tracing::debug!("Copying file from {:?} to {:?}", file_path, target_path);
     fs::copy(&file_path, &target_path).await.map_err(|e| {
         tracing::error!("Failed to copy snapshot file: {}", e);
@@ -466,8 +466,6 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     })?;
     tracing::debug!("File copied successfully");
 
-    // 5. 임시 파일 삭제
-    tracing::debug!("Removing temporary file: {:?}", file_path);
     fs::remove_file(&file_path).await.map_err(|e| {
         tracing::error!("Failed to remove temp file: {}", e);
         tide::Error::from_str(
@@ -475,36 +473,21 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
             format!("Failed to remove temp file: {}", e),
         )
     })?;
-    tracing::debug!("Temporary file removed successfully");
 
-    // 6. 추가적인 스냅샷 복원 작업 수행
-    // 예: 스냅샷 파일을 압축 해제하고 데이터베이스를 복원하는 등의 작업
-    // 여기에 필요한 로직을 추가하세요.
-    tracing::debug!("Performing additional snapshot restoration tasks");
-
-    // --------------------- TODO 구현 끝 ---------------------
-
-    // 성공 응답 반환
-    tracing::debug!("Snapshot restored successfully. Preparing response");
-    Ok(
-        Response::builder(StatusCode::Ok)
-            .header("Content-Type", "application/json")
-            .body(json!({
-                "message": "Snapshot restored successfully",
-                "snapshot_file": original_file_name,
-            }))
-            .build(),
-    )
-    /*
     let file_name = original_file_name.clone();
     tracing::info!("restore_snapshot: file_name={}", file_name);
     let body: Value = req.body_json().await?;
 
+    let leader_id = Config::instance_id();
+    let leader_addr = Config::http_addr();
+    
     let wrapped_body = json!({
         "request": {
             "command": "snapshot_sync",
             "value": body,
             "file_name": file_name,
+            "leader_id": leader_id,
+            "leader_addr": leader_addr,
         }
     });
 
@@ -529,8 +512,6 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
                 .body(Body::from_json(&json!({"error": e.to_string()}))?)
                 .build()),
     }
-
-    */
 }
 
 // DELETE /snapshots/delete_all

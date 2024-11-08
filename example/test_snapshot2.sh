@@ -275,24 +275,62 @@ sleep 1
 
 echo "Delete snapshot"
 curl --silent -X DELETE "127.0.0.1:21001/api/snapshot/$DATETIME/delete"
+echo ""
 sleep 1
 
 echo "List snapshot version id on node 1"
 rpc 21001/api/snapshots
 sleep 1
 
-if [ "$SINGLE_NODE" = false ]; then
+if [ "$SINGLE_MODE" = false ]; then
     echo "List snapshot version id on node 2"
     rpc 21002/api/snapshots
     sleep 1
 
-    echo "Search vectors with specific version id on node 3"
+    echo "List snapshot version id on node 3"
     rpc 21003/api/snapshots
     sleep 1
 fi
 
 echo "restore with downloaded zip file"
+curl -X POST -F "file=temp/snapshot-$DATETIME.zip" "http://127.0.0.1:21001/api/snapshots/restore"
+echo ""
 
+echo "Search vectors with specific version id on node 1"
+rpc 21001/api/space/spacename/version/1/search \
+'{
+    "vector": [0.1, 0.2, 0.3, 0.4]
+}'
+sleep 1
+
+if [ "$SINGLE_MODE" = false ]; then
+    echo "Search vectors with specific version id on node 2"
+    rpc 21002/api/space/spacename/version/1/search \
+    '{
+        "vector": [0.1, 0.2, 0.3, 0.4]
+    }'
+    sleep 1
+
+    echo "Search vectors with specific version id on node 3"
+    rpc 21003/api/space/spacename/version/1/search \
+    '{
+        "vector": [0.1, 0.2, 0.3, 0.4]
+    }'
+    sleep 1
+fi
+
+echo "Upsert vectors to 'spacename' without specifying version"
+rpc 21001/api/space/spacename/vector \
+'{
+    "vectors": [
+        {
+            "id": 1,
+            "data": [1.0, 1.0, 1.0, 1.0],
+            "metadata": {"label": "modified"}
+        }
+    ]
+}'
+sleep 1
 
 echo "Killing all nodes in 3s..."
 sleep 1

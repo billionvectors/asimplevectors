@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
     let http_addr = Config::http_addr();
 
     // Start the Raft node with the retrieved configuration values
-    raft_cluster::start_example_raft_node(
+    raft_cluster::start_raft_node(
         id,
         db_path,
         http_addr,

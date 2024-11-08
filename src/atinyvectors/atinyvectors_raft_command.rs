@@ -3,7 +3,13 @@ use std::sync::Arc;
 use tracing;
 use rocksdb::{Options, DB};
 use async_std::fs;
+use async_std::fs::File;
 use async_std::path::Path;
+use async_std::path::PathBuf;
+use async_std::io::WriteExt;
+use reqwest;
+use reqwest::StatusCode;
+use regex::Regex;
 
 use crate::{atinyvectors::atinyvectors_bo::ATinyVectorsBO, config::Config};
 
@@ -155,9 +161,38 @@ impl ATinyVectorsRaftCommand {
     }
 
     async fn process_snapshot_sync_command(&self, request_obj: &Value) {
+        let current_addr = Config::http_addr().clone();
         let file_name = request_obj.get("file_name").and_then(|v| v.as_str()).unwrap_or("default");
+        let leader_id = request_obj.get("leader_id").and_then(|v| v.as_u64()).unwrap_or(Config::instance_id());
+        let leader_addr =  request_obj.get("leader_addr").and_then(|v| v.as_str()).unwrap_or(current_addr.as_str());
 
-        tracing::debug!("Processing snapshot_sync command: {}", file_name);
+        tracing::info!("Processing snapshot_sync command: file_name={} / leader_addr={}", file_name, leader_addr);
+
+        if (leader_id != Config::instance_id()) {
+            tracing::debug!("Not Leader Node: Trying to download snapshot file");
+    
+            let snapshot_dir = PathBuf::from(Config::data_path()).join("snapshot");
+            tracing::debug!("Snapshot directory path: {:?}", snapshot_dir);
+
+            if !snapshot_dir.exists().await {
+                tracing::debug!("Snapshot directory does not exist. Creating...");
+                fs::create_dir_all(&snapshot_dir).await.map_err(|e| {
+                    tracing::error!("Failed to create snapshot directory: {}", e);
+                });
+                tracing::debug!("Snapshot directory created successfully");
+            }
+            
+            // download from leader_addr
+            let date = self.extract_date_from_file_name(file_name).unwrap_or_else(|| "unknown_date".to_string());
+            let download_url = format!("{}/snapshot/{}/download", leader_addr, date);
+            tracing::debug!("Download Endpoint: {}", download_url);
+
+            let file_path = snapshot_dir.join(file_name);
+            match self.download_file(&download_url, &file_path).await {
+                Ok(_) => tracing::debug!("File downloaded successfully: {:?}", file_path),
+                Err(e) => tracing::error!("Failed to download file: {}", e),
+            }
+        }
 
         if let Err(e) = self.atinyvectors_bo.snapshot.restore_snapshot(file_name) {
             tracing::error!("Failed to restore snapshot: {}", e);
@@ -222,5 +257,19 @@ impl ATinyVectorsRaftCommand {
 
         let db = DB::open(&db_opts, path).unwrap();
         let _ = db.delete(key);
+    }
+
+    fn extract_date_from_file_name(&self, file_name: &str) -> Option<String> {
+        let re = Regex::new(r"snapshot-(\d{8})\.zip").ok()?;
+        re.captures(file_name).and_then(|cap| cap.get(1).map(|date| date.as_str().to_string()))
+    }
+
+    async fn download_file(&self, url: &str, file_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let response = reqwest::get(url).await?;
+        let mut file = File::create(file_path).await?;
+        let content = response.bytes().await?;
+    
+        file.write_all(&content).await?;
+        Ok(())
     }
 }

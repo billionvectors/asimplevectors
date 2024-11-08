@@ -39,6 +39,7 @@ This project is built with Raft consensus to achieve clustering. It leverages co
 ## How to Run
 
 1. Install dependencies: `./install_dependency.sh`
+-> If you get an error that your CMake version is low, we recommend docker build. If you have trouble with *docker build*, get the latest version from [cmake.org](https://cmake.org) and install it. 
 2. Build the project: `./build.sh --release`
 3. Copy .env.local file to .env
 4. Start the vector database node:
@@ -73,6 +74,75 @@ curl --silent "127.0.0.1:21001/cluster/metrics"
 ```
 This adds a clear note about Raft's recommendation for an odd number of nodes but also specifies that two nodes will still work.
 
+## Search Example
+### Creating a Space
+
+To create a new Space, you can use the `/api/space` endpoint. Below is an example where a Space called `spacename` is created with a default index configuration. The **dimension** is set to 4, and the **metric** is set to **L2** (Euclidean distance).
+
+```bash
+curl "127.0.0.1:21001/api/space" -H "Content-Type: application/json" -d  \
+'{
+    "name": "spacename",
+    "dimension": 4,
+    "metric": "L2"
+}'
+```
+
+### Checking Created Space Information
+
+Once a Space is created, you can check its details by using the /api/space/{spacename} endpoint.
+
+```bash
+curl "127.0.0.1:21001/api/space/spacename"
+```
+
+### Adding Vectors to the Space
+
+To add vectors to the created Space, you can use the /api/space/{spacename}/vector endpoint. Below is an example where several vectors are added to the spacename Space, each with its own ID, vector data, and metadata.
+
+```bash
+curl "127.0.0.1:21001/api/space/spacename/vector" -H "Content-Type: application/json" -d   \
+'{
+    "vectors": [
+        {
+            "id": 1,
+            "data": [0.1, 0.2, 0.3, 0.4],
+            "metadata": {"label": "first"}
+        },
+        {
+            "id": 2,
+            "data": [0.5, 0.6, 0.7, 0.8],
+            "metadata": {"label": "second"}
+        },
+        {
+            "id": 3,
+            "data": [0.9, 0.8, 0.7, 0.6],
+            "metadata": {"label": "third"}
+        },
+        {
+            "id": 4,
+            "data": [1.0, 0.1, 0.2, 0.3],
+            "metadata": {"label": "forth"}
+        },
+        {
+            "id": 5,
+            "data": [0.2, 0.3, 0.4, 0.3],
+            "metadata": {"label": "fivth"}
+        }
+    ]
+}'
+```
+
+### Searching with Dense Vectors
+
+To search using a dense vector, you can use the following JSON format. This will query the database with the given vector and return the most similar vectors.
+
+```bash
+curl "127.0.0.1:21001/api/space/spacename/search" -H "Content-Type: application/json" -d  \
+'{
+    "vector": [0.2, 0.3, 0.4, 0.3]
+}'
+```
 
 ## Supported Metrics
 `asimplevectors` supports multiple distance metrics to handle a variety of use cases, offering flexibility in how vectors are compared.

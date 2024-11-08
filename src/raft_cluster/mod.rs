@@ -72,7 +72,7 @@ pub type RaftCluster = openraft::Raft<TypeConfig>;
 
 pub type Server = tide::Server<Arc<App>>;
 
-pub async fn start_example_raft_node<P>(
+pub async fn start_raft_node<P>(
     node_id: NodeId,
     dir: P,
     http_addr: String,
@@ -144,6 +144,11 @@ where
 
     app.listen(http_addr.clone()).await?;
     tracing::info!("App Server listening on: {}", http_addr);
+    
+    if (crate::Config::enable_swagger_ui()) {
+        tracing::info!("Swagger running on: {}/swagger-ui/", http_addr);
+    }
+
     _ = handle.await;
     Ok(())
 }
