@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     cargo \
     libomp-dev \
+    libblas-dev \
+    liblapack-dev \
     apt-transport-https \
     ca-certificates \
     gnupg \
