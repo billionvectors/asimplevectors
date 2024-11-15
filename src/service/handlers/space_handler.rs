@@ -74,6 +74,9 @@ pub async fn space(mut req: Request<Arc<App>>) -> tide::Result {
     }
 
     let body: Value = req.body_json().await?;
+    
+    tracing::debug!("space: body={}", body);
+
     let wrapped_body = json!({
         "request": {
             "command": "space",

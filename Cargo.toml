@@ -1,6 +1,6 @@
 [package]
 name = "asimplevectors"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
@@ -33,7 +33,10 @@ toy-rpc = { version = "0.10.0", features = [
   "tokio_runtime",
 ] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.0", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.1", features = ["env-filter"] }
+tracing-appender = "0.2"
+
+anyhow = "1.0"
 
 # for atinyvectors
 libc = "0.2"
@@ -42,6 +45,8 @@ dotenv = "0.15.0"
 once_cell = "1.19.0"
 chrono = "0.4.38"
 regex = "1.10.6"
+
+
 
 [dev-dependencies]
 maplit = "1.0.2"

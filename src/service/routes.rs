@@ -45,7 +45,6 @@ async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Respons
     let swagger_config = Arc::new(utoipa_swagger_ui::Config::from("/api-docs/openapi.json"));
 
     let mut path = request.url().path().to_string();
-    println!("path: {}", path);
 
     // Ensure the path ends with a trailing slash if it's /swagger-ui
     if path == "/swagger-ui" {

@@ -29,6 +29,12 @@ This project is built with Raft consensus to achieve clustering. It leverages co
 
 ![Overall Architecture](docs/images/overallarchitecture.svg)
 
+## Quick Install from Docker
+To download the latest version of the asimplevectors Docker image, use the following
+```bash
+docker pull billionvectors/asimplevectors:0.1.0
+```
+
 ## How to Run Examples
 
 1. Run `install_dependency.sh` to install necessary dependencies.

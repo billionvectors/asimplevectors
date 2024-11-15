@@ -48,6 +48,18 @@ impl Config {
                     .help("Set the log level (e.g., info, debug)"),
             )
             .arg(
+                Arg::new("service_log_file")
+                    .long("service_log_file")
+                    .action(ArgAction::Set)
+                    .help("Set the service log file path"),
+            )
+            .arg(
+                Arg::new("service_log_level")
+                    .long("service_log_level")
+                    .action(ArgAction::Set)
+                    .help("Set the service log level (e.g., info, debug)"),
+            )
+            .arg(
                 Arg::new("m")
                     .long("m")
                     .action(ArgAction::Set)
@@ -144,6 +156,14 @@ impl Config {
             env::set_var("ATV_LOG_LEVEL", value);
         }
 
+        if let Some(value) = matches.get_one::<String>("service_log_file") {
+            env::set_var("ATV_SERVICE_LOG_FILE", value);
+        }
+
+        if let Some(value) = matches.get_one::<String>("service_log_level") {
+            env::set_var("ATV_SERVICE_LOG_LEVEL", value);
+        }
+
         if let Some(value) = matches.get_one::<String>("m") {
             env::set_var("ATV_DEFAULT_M", value);
         }
@@ -215,6 +235,14 @@ impl Config {
 
     pub fn log_level() -> String {
         env::var("ATV_LOG_LEVEL").unwrap_or_else(|_| "info".to_string())
+    }
+
+    pub fn service_log_file() -> String {
+        env::var("ATV_SERVICE_LOG_FILE").unwrap_or_else(|_| "logs/asimplevectors.log".to_string())
+    }
+
+    pub fn service_log_level() -> String {
+        env::var("ATV_SERVICE_LOG_LEVEL").unwrap_or_else(|_| "info".to_string())
     }
 
     pub fn default_m() -> i64 {

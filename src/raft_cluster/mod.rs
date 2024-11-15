@@ -92,6 +92,12 @@ where
             crate::Config::raft_heartbeat_interval());
         exit(-1);
     }
+    
+    tracing::info!("App Server listening on: {}", http_addr);
+    
+    if (crate::Config::enable_swagger_ui()) {
+        tracing::info!("Swagger running on: {}/swagger-ui/", http_addr);
+    }
 
     // Create a configuration for the raft instance.
     let config = Config {
@@ -143,11 +149,6 @@ where
     routes::register_routes(&mut app);
 
     app.listen(http_addr.clone()).await?;
-    tracing::info!("App Server listening on: {}", http_addr);
-    
-    if (crate::Config::enable_swagger_ui()) {
-        tracing::info!("Swagger running on: {}/swagger-ui/", http_addr);
-    }
 
     _ = handle.await;
     Ok(())
