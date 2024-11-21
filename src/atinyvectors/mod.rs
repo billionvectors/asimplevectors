@@ -4,6 +4,7 @@
 pub mod atinyvectors_bo;
 pub mod atinyvectors_raft_command;
 
+pub mod idcache;
 pub mod rbac_token;
 pub mod search;
 pub mod space;

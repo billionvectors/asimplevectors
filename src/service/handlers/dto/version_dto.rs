@@ -27,6 +27,8 @@ pub struct VersionRequest {
 /// VersionResponse structure for returning version details
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct VersionResponse {
+    /// Unique identifier for the version
+    id: u64,
     /// UTC time when the version was created
     created_time_utc: u64,
     /// Description of the version
@@ -41,8 +43,6 @@ pub struct VersionResponse {
     tag: Option<String>,
     /// UTC time when the version was last updated
     updated_time_utc: u64,
-    /// Unique identifier for the version
-    versionId: u64,
 }
 
 /// ErrorResponse structure for handling errors
@@ -62,10 +62,10 @@ pub struct ListVersionsResponse {
 /// VersionInfo structure containing basic version information
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct VersionInfo {
+    /// Unique identifier for the version
+    id: u64,
     /// Name of the version
     name: String,
-    /// ID of the version
-    versionId: u64,
     /// Description of the version (Optional)
     #[serde(default)]
     description: Option<String>,

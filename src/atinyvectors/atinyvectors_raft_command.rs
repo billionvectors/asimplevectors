@@ -168,7 +168,7 @@ impl ATinyVectorsRaftCommand {
 
         tracing::info!("Processing snapshot_sync command: file_name={} / leader_addr={}", file_name, leader_addr);
 
-        if (leader_id != Config::instance_id()) {
+        if leader_id != Config::instance_id() {
             tracing::debug!("Not Leader Node: Trying to download snapshot file");
     
             let snapshot_dir = PathBuf::from(Config::data_path()).join("snapshot");
@@ -214,25 +214,29 @@ impl ATinyVectorsRaftCommand {
         tracing::debug!("Processing storage_put_key command");
         let space_name = request_obj.get("space_name").and_then(|v| v.as_str()).unwrap_or("default");
         let key = request_obj.get("key").and_then(|v| v.as_str()).unwrap_or("");
-
+    
         if let Some(value) = request_obj.get("value") {
-            let target_directory = format!("{}/space/{}", Config::data_path(), space_name);
-        
-            // Create target directory if it does not exist
-            if !std::path::Path::new(&target_directory).exists() {
-                let _ = fs::create_dir_all(&target_directory).await;
+            if let Some(value_str) = value.as_str() {
+                let target_directory = format!("{}/space/{}", Config::data_path(), space_name);
+            
+                // Create target directory if it does not exist
+                if !std::path::Path::new(&target_directory).exists() {
+                    let _ = fs::create_dir_all(&target_directory).await;
+                }
+    
+                let path = target_directory + "storage.rocksdb";
+                let mut db_opts = Options::default();
+                db_opts.create_if_missing(true);
+    
+                let db = DB::open(&db_opts, path).unwrap();
+                let _ = db.put(key, value_str);
+            } else {
+                tracing::error!("'value' is not a string.");
             }
-
-            let path = target_directory + "storage.rocksdb";
-            let mut db_opts = Options::default();
-            db_opts.create_if_missing(true);
-
-            let db = DB::open(&db_opts, path).unwrap();
-            let _ = db.put(key, value.to_string());
         } else {
             tracing::error!("No 'value' field found in 'request'");
         }
-    }
+    }    
 
     async fn process_storage_remove_key_command(&self, request_obj: &Value) {
         tracing::debug!("Processing storage_remove_key command");

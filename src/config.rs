@@ -114,6 +114,12 @@ impl Config {
                     .help("Set the instance ID"),
             )
             .arg(
+                Arg::new("standalone")
+                    .long("standalone")
+                    .action(ArgAction::SetTrue)
+                    .help("Set the standalone node (true: standalone, false: cluster)"),
+            )
+            .arg(
                 Arg::new("http_addr")
                     .long("http-addr")
                     .action(ArgAction::Set)
@@ -198,6 +204,10 @@ impl Config {
 
         if let Some(value) = matches.get_one::<String>("id") {
             env::set_var("ATV_INSTANCE_ID", value);
+        }
+
+        if matches.get_flag("standalone") {
+            env::set_var("ATV_STANDALONE", "true");
         }
 
         if let Some(value) = matches.get_one::<String>("http_addr") {
@@ -292,6 +302,13 @@ impl Config {
 
     pub fn enable_swagger_ui() -> bool {
         env::var("ATV_ENABLE_SWAGGER_UI")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse::<bool>()
+            .unwrap_or(false)
+    }
+
+    pub fn standalone() -> bool {
+        env::var("ATV_STANDALONE")
             .unwrap_or_else(|_| "false".to_string())
             .parse::<bool>()
             .unwrap_or(false)

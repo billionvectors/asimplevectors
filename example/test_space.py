@@ -53,7 +53,7 @@ def run_test(host, singlenode):
 
     create_space_data = {
         "name": "spacename",
-        "dimension": 128,
+        "dimension": 128, # default dense index
         "metric": "cosine",
         "hnsw_config": {
             "ef_construct": 123
@@ -61,28 +61,12 @@ def run_test(host, singlenode):
         "quantization_config": {
             "scalar": {
                 "type": "int8",
-                "quantile": 0.99,
-                "always_ram": True
-            }
-        },
-        "dense": {
-            "dimension": 1536,
-            "metric": "Cosine",
-            "hnsw_config": {
-                "m": 32,
-                "ef_construct": 123
-            },
-            "quantization_config": {
-                "scalar": {
-                    "type": "int8",
-                    "quantile": 0.8
-                }
             }
         },
         "sparse": {
             "metric": "Cosine"
         },
-        "indexes": {
+        "indexes": { # additional custom indexes
             "index1": {
                 "dimension": 4,
                 "metric": "Cosine",
@@ -92,7 +76,6 @@ def run_test(host, singlenode):
                 "quantization_config": {
                     "scalar": {
                         "type": "int8",
-                        "quantile": 0.6
                     }
                 }
             },
@@ -105,7 +88,6 @@ def run_test(host, singlenode):
                 "quantization_config": {
                     "scalar": {
                         "type": "int8",
-                        "quantile": 0.6
                     }
                 }
             }

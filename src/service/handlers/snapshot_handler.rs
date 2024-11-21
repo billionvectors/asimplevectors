@@ -120,7 +120,11 @@ pub async fn restore_snapshot(mut req: Request<Arc<App>>) -> tide::Result {
     let file_name = req.param("file_name").unwrap_or("default").to_string();
     let file_name = format!("snapshot-{}.zip", file_name);
     tracing::info!("restore_snapshot: file_name={}", file_name);
-    let body: Value = req.body_json().await?;
+
+    let body: Value = match req.body_json().await {
+        Ok(json) => json,
+        Err(_) => json!({}),
+    };
 
     let wrapped_body = json!({
         "request": {
@@ -294,12 +298,15 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
                 .build());
     }
 
+    tracing::info!("restore_snapshot_from_upload");
+
     // Extract the Content-Type header
     let content_type = match req.header("Content-Type") {
         Some(cts) => {
             match cts.get(0) {
                 Some(hv) => hv.to_string(),
                 None => {
+                    tracing::debug!("Content-Type is missing");
                     return Ok(
                         Response::builder(StatusCode::BadRequest)
                             .header("Content-Type", "application/json")
@@ -309,6 +316,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
             }
         },
         None => {
+            tracing::debug!("Content-Type is missing");
             return Ok(
                 Response::builder(StatusCode::BadRequest)
                     .header("Content-Type", "application/json")
@@ -318,9 +326,11 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     };
 
     // Extract boundary from Content-Type
+    tracing::debug!("content_type={:?}", content_type);
     let boundary = match multer::parse_boundary(&content_type) {
         Ok(b) => b,
         Err(_) => {
+            tracing::debug!("Extract boundary from Content-Type failed");
             return Ok(
                 Response::builder(StatusCode::BadRequest)
                     .header("Content-Type", "application/json")
@@ -333,6 +343,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     let body_bytes = match req.body_bytes().await {
         Ok(bytes) => bytes,
         Err(e) => {
+            tracing::debug!("Collect the entire body as bytes failed");
             return Ok(
                 Response::builder(StatusCode::BadRequest)
                     .header("Content-Type", "application/json")
@@ -347,6 +358,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     });
 
     // Initialize multer Multipart parser
+    tracing::debug!("Initialize multer Multipart parser");
     let mut multipart = Multipart::new(body_stream, boundary);
 
     // Variables to store file path and original file name
@@ -354,7 +366,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     let mut original_file_name: Option<String> = None;
 
     let defaultFileName = {
-        let date = Local::now().format("%Y%m%d").to_string();
+        let date = Local::now().format("%Y%m%d%H%M").to_string();
         format!("snapshot-{}.zip", date)
     };
 
@@ -368,6 +380,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
                 None => defaultFileName.clone(),
             };
             original_file_name = Some(filename.clone());
+            tracing::debug!("filename: {}", filename);
 
             let data_path = Config::data_path().clone();
             let snapshot_dir = Path::new(&data_path);
@@ -403,9 +416,12 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
         }
     }
 
+    tracing::debug!("file_path: {:?}", file_path);
+
     let file_path = match file_path {
         Some(path) => path,
         None => {
+            tracing::debug!("file does not exists!");
             return Ok(
                 Response::builder(StatusCode::BadRequest)
                     .header("Content-Type", "application/json")
@@ -419,7 +435,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
         None => defaultFileName.clone(),
     };
 
-    let re = Regex::new(r"^snapshot-(?P<date>\d{8})\.zip$").map_err(|e| {
+    let re = Regex::new(r"^snapshot-(?P<date>\d{12})\.zip$").map_err(|e| {
         tide::Error::from_str(
             StatusCode::InternalServerError,
             format!("Failed to compile regex: {}", e),
@@ -433,7 +449,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
                 Response::builder(StatusCode::BadRequest)
                     .header("Content-Type", "application/json")
                     .body(json!({"error": 
-                        format!("Invalid filename format: input={} / fileformat=snapshot-yyyymmdd.zip", original_file_name)}))
+                        format!("Invalid filename format: input={} / fileformat=snapshot-yyyymmddHHMM.zip", original_file_name)}))
                     .build());
         }
     };
@@ -476,7 +492,6 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
 
     let file_name = original_file_name.clone();
     tracing::info!("restore_snapshot: file_name={}", file_name);
-    let body: Value = req.body_json().await?;
 
     let leader_id = Config::instance_id();
     let leader_addr = Config::http_addr();
@@ -484,7 +499,7 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
     let wrapped_body = json!({
         "request": {
             "command": "snapshot_sync",
-            "value": body,
+            "value": "{}", // current empty value
             "file_name": file_name,
             "leader_id": leader_id,
             "leader_addr": leader_addr,
@@ -495,6 +510,8 @@ pub async fn restore_snapshot_from_upload(mut req: Request<Arc<App>>) -> tide::R
         key: "snapshot_sync".to_string(),
         value: serde_json::to_string(&wrapped_body)?,
     };
+
+    tracing::debug!("raft client write");
 
     // Send a write request to the Raft client
     let res = req.state().raft.client_write(raft_req).await;

@@ -5,6 +5,7 @@ use std::fmt::Display;
 use std::io::Cursor;
 use std::path::Path;
 use std::sync::Arc;
+use std::collections::BTreeMap;
 
 use openraft::Config;
 use tokio::net::TcpListener;
@@ -81,21 +82,21 @@ pub async fn start_raft_node<P>(
 where
     P: AsRef<Path>,
 {
-    if (crate::Config::raft_heartbeat_interval() > crate::Config::raft_election_timeout()) {
+    if crate::Config::raft_heartbeat_interval() > crate::Config::raft_election_timeout() {
         tracing::error!("Heatbeat interval shoud be lower than Election Timeout: election_timeout={}, heartbeat_interval={}",
             crate::Config::raft_election_timeout(), crate::Config::raft_heartbeat_interval());
         exit(-1);
     }
 
-    if (crate::Config::raft_heartbeat_interval() >= 300) {
+    if crate::Config::raft_heartbeat_interval() >= 300 {
         tracing::error!("Heatbeat interval is shoud be under 300: heartbeat_interval={}",
             crate::Config::raft_heartbeat_interval());
         exit(-1);
     }
-    
+
     tracing::info!("App Server listening on: {}", http_addr);
     
-    if (crate::Config::enable_swagger_ui()) {
+    if crate::Config::enable_swagger_ui() {
         tracing::info!("Swagger running on: {}/swagger-ui/", http_addr);
     }
 
@@ -122,6 +123,20 @@ where
 
     // Create a local raft instance.
     let raft = openraft::Raft::new(node_id, config.clone(), network, log_store, state_machine_store).await.unwrap();
+    if crate::Config::standalone() {
+        // standalone
+        tracing::info!("This is standalone mode");
+        let mut nodes = BTreeMap::new();
+        let node = Node {
+            api_addr: http_addr.clone(),
+            rpc_addr: rpc_addr.clone(),
+        };
+
+        nodes.insert(node_id, node);
+        raft.initialize(nodes).await;
+    } else {
+        tracing::info!("This is cluster mode. you should call /cluster/init before api call");
+    }
 
     let app = Arc::new(App {
         id: node_id,
@@ -131,7 +146,7 @@ where
         key_values: kvs,
         config,
         atinyvectors_bo,
-        atinyvectors_command,
+        atinyvectors_command
     });
 
     let echo_service = Arc::new(network::raft::Raft::new(app.clone()));

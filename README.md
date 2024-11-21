@@ -32,7 +32,8 @@ This project is built with Raft consensus to achieve clustering. It leverages co
 ## Quick Install from Docker
 To download the latest version of the asimplevectors Docker image, use the following
 ```bash
-docker pull billionvectors/asimplevectors:0.1.0
+docker pull billionvectors/asimplevectors:0.1.1
+docker run -p 21001:21001 -p 21002:21002 asimplevectors:0.1.1
 ```
 
 ## How to Run Examples

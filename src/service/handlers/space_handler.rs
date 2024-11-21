@@ -1,8 +1,9 @@
 use std::sync::Arc;
+use tide::http::trace;
 use tide::{Body, Request, Response, StatusCode};
 use serde_json::Value;
 use serde_json::json;
-use tracing::debug;
+use tracing::{info, debug};
 
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -74,7 +75,38 @@ pub async fn space(mut req: Request<Arc<App>>) -> tide::Result {
     }
 
     let body: Value = req.body_json().await?;
+
+    // parameter validation (throw error if space exists)
+    let space_name = match body.get("name") {
+        Some(name) => name.as_str().ok_or_else(|| {
+            tide::Error::from_str(
+                StatusCode::BadRequest,
+                json!({"error": "Invalid 'name' format, it should be a string"}).to_string(),
+            )
+        })?,
+        None => {
+            return Ok(
+                Response::builder(StatusCode::BadRequest)
+                    .header("Content-Type", "application/json")
+                    .body(Body::from_json(&json!({"error": "Missing 'name' field"}))?)
+                    .build(),
+            );
+        }
+    };
+
+    let bo = req.state().atinyvectors_bo.clone();
+    let space_exists = bo.id_cache.get_default_version_id(space_name);
+    if space_exists > 0 {
+        tracing::info!("space {} already exists!", space_name);
+        return Ok(
+            Response::builder(StatusCode::Conflict)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": "Space with the given name already exists"}))?)
+                .build(),
+        );
+    }
     
+    // logic
     tracing::debug!("space: body={}", body);
 
     let wrapped_body = json!({
@@ -207,7 +239,13 @@ pub async fn delete_space(mut req: Request<Arc<App>>) -> tide::Result {
     }
 
     let space_name = req.param("space_name").unwrap_or("default").to_string();
-    let body: Value = req.body_json().await?;
+    info!("delete_space: {}", space_name);
+
+    let body: Value = match req.body_json().await {
+        Ok(json) => json,
+        Err(_) => json!({}),
+    };
+
     let wrapped_body = json!({
         "request": {
             "command": "delete_space",

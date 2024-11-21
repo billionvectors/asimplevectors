@@ -20,5 +20,5 @@ pub struct App {
     pub key_values: Arc<RwLock<BTreeMap<String, String>>>,
     pub config: Arc<Config>,
     pub atinyvectors_bo: Arc<ATinyVectorsBO>,
-    pub atinyvectors_command: Arc<ATinyVectorsRaftCommand>
+    pub atinyvectors_command: Arc<ATinyVectorsRaftCommand>,
 }

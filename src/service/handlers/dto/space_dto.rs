@@ -139,12 +139,6 @@ pub struct QuantizationConfig {
 /// Scalar quantization configuration structure
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct ScalarQuantizationConfig {
-    /// Always keep in RAM (Optional)
-    #[serde(default)]
-    AlwaysRam: bool,
-    /// Quantile value (Optional)
-    #[serde(default)]
-    Quantile: f64,
     /// Quantization type, options are "f32", "f16", "int8", "int16", "int32" (Optional)
     #[serde(default)]
     Type: String,
@@ -153,9 +147,6 @@ pub struct ScalarQuantizationConfig {
 /// Product quantization configuration structure
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct ProductQuantizationConfig {
-    /// Always keep in RAM (Optional)
-    #[serde(default)]
-    AlwaysRam: bool,
     /// Compression method (Optional)
     #[serde(default)]
     Compression: String,
@@ -172,7 +163,13 @@ pub struct ListSpacesResponse {
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct SpaceInfo {
     /// Name of the space
-    spacename: String,
+    name: String,
     /// ID of the space
     id: u64,
+    /// description of the space
+    description: String,
+    /// created_time_utc
+    created_time_utc: u64,
+    /// updated_time_utc
+    updated_time_utc: u64,
 }
