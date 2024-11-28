@@ -32,8 +32,9 @@ This project is built with Raft consensus to achieve clustering. It leverages co
 ## Quick Install from Docker
 To download the latest version of the asimplevectors Docker image, use the following
 ```bash
-docker pull billionvectors/asimplevectors:0.1.1
-docker run -p 21001:21001 -p 21002:21002 asimplevectors:0.1.1
+docker pull billionvectors/asimplevectors:latest
+docker run -p 21001:21001 -p 21002:21002 asimplevectors:latest
+curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
 ```
 
 ## How to Run Examples
@@ -151,7 +152,13 @@ curl "127.0.0.1:21001/api/space/spacename/search" -H "Content-Type: application/
 }'
 ```
 
-## Supported Metrics
+## Support Languages
+`asimplevectors` support various programming languages to meet your diverse development needs.
+- Python ([guide](https://github.com/billionvectors/client_api/blob/main/python/README.md))
+- Javascript
+- C#
+
+## Support Metrics
 `asimplevectors` supports multiple distance metrics to handle a variety of use cases, offering flexibility in how vectors are compared.
 - **L2 Distance (Euclidean Distance)**
 - **Cosine Similarity**
