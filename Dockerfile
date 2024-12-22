@@ -44,6 +44,7 @@ WORKDIR /app
 # Clone atinyvectors repo using GitHub token and build it
 RUN git clone https://github.com/billionvectors/atinyvectors.git \
     && cd atinyvectors \
+    && cp -rf db /app/asimplevectors/ \
     && mkdir -p build && cd build \
     && cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=${BUILD_TYPE} .. \
     && make -j$(nproc) \

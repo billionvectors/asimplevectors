@@ -9,3 +9,4 @@ cd atinyvectors
 git pull
 ./dockerbuild.sh --no-cache=true
 cp output/* ../../lib/
+cp -rf db ../../

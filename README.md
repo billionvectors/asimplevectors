@@ -2,7 +2,7 @@
 
 ## Overview
 
-[asimplevectors](https://docs.asimplevectors.com/) is a high-performance vector database optimized for retrieval-augmented generation (RAG). It provides fast and reliable clustering through Rust and the Raft consensus protocol, while leveraging SQLite3 for easy data management. Additionally, the database includes built-in key-value storage for managing original document data within the vector database.
+[asimplevectors](https://docs.asimplevectors.com/) is a high-performance vector database optimized for retrieval-augmented generation (RAG) vector database. It provides fast and reliable clustering through Rust and the Raft consensus protocol, while leveraging SQLite3 for easy data management. Additionally, the database includes built-in key-value storage for managing original document data within the vector database.
 
 ## Key Advantages
 
@@ -16,8 +16,9 @@
 - **Version Management**: Includes support for version control, with A/B testing capabilities.
 - **Key-Value Storage**: Built-in key-value storage functionality.
 - **Snapshot Support**: Offers snapshot capabilities for data backups and state saving.
-- **Dense & Sparse Vector Management**: Handles both dense and sparse vector types.
+- **Dense & Sparse Vector Management**: Handles both dense and sparse vector types with *HNSW* & *FAISS*.
 - **Filtered Search**: Enables users to filter vectors by metadata attributes in search queries, allowing refined results based on custom conditions.
+- **Rerank Capability**: Provides reranking of initial search results using advanced scoring techniques like *BM25*. This feature ensures highly relevant results for document retrieval use cases.
 
 ## Docs
 
@@ -25,7 +26,7 @@ For detailed development guidelines and documentation, please refer to the offic
 
 ## Architecture
 
-This project is built with Raft consensus to achieve clustering. It leverages components such as [atinyvectors](https://github.com/billionvectors/atinyvectors) (written in C++), hnswlib, and SQLite3 to provide high-performance vector management and clustering capabilities.
+This project is built with Raft consensus to achieve clustering. It leverages components such as [atinyvectors](https://github.com/billionvectors/atinyvectors) (written in C++), faiss, and SQLite3 to provide high-performance vector management and clustering capabilities.
 
 ![Overall Architecture](docs/images/overallarchitecture.svg)
 

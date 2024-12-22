@@ -1,4 +1,5 @@
 pub mod keyvalue_dto;
+pub mod rerank_dto;
 pub mod search_dto;
 pub mod security_dto;
 pub mod snapshot_dto;

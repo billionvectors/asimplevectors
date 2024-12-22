@@ -11,14 +11,18 @@ use utoipa_swagger_ui::Config;
 
 use crate::raft_cluster::app::App;
 use crate::service::handlers::{
-    search_handler, security_handler, snapshot_handler, 
-    space_handler, vector_handler, version_handler,
-    kvstorage_handler
+    kvstorage_handler,
+    rerank_handler, search_handler, security_handler, 
+    snapshot_handler, space_handler, vector_handler, 
+    version_handler,
 };
 
 use crate::service::handlers::dto::keyvalue_dto::{
     KeyValueRequest, KeyValueResponse, KeyValueErrorResponse, ListKeysResponse};
 
+use crate::service::handlers::dto::rerank_dto::{
+    RerankRequest, RerankResponse, RerankErrorResponse};
+    
 use crate::service::handlers::dto::search_dto::{
     SearchRequest, SearchResponse, SearchErrorResponse};
     
@@ -80,6 +84,9 @@ pub fn build_openapi(app: &mut Server<Arc<App>>) {
             kvstorage_handler::remove_key,
             kvstorage_handler::list_keys,
 
+            rerank_handler::rerank,
+            rerank_handler::rerank_with_version,
+
             search_handler::search,
             search_handler::search_with_version,
 
@@ -117,6 +124,7 @@ pub fn build_openapi(app: &mut Server<Arc<App>>) {
             schemas(
                 KeyValueRequest, KeyValueResponse, KeyValueErrorResponse, ListKeysResponse,
 
+                RerankRequest, RerankResponse, RerankErrorResponse,
                 SearchRequest, SearchResponse, SearchErrorResponse,
                 
                 RbacTokenRequest, RbacTokenResponse, RbacTokenErrorResponse, ListRbacTokensResponse, TokenDetails,
@@ -153,34 +161,27 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     // end points
     let mut api = app.at("/api");
 
-    // Space endpoints
-    api.at("/space").post(space_handler::space);
-    api.at("/space/:space_name").get(space_handler::get_space);
-    api.at("/space/:space_name").post(space_handler::update_space);
-    api.at("/space/:space_name").delete(space_handler::delete_space);
-    api.at("/spaces").get(space_handler::list_spaces);
+    // keyvalue Storage endpoints
+    api.at("/space/:space_name/key/:key").post(kvstorage_handler::put_key);
+    api.at("/space/:space_name/key/:key").get(kvstorage_handler::get_key);
+    api.at("/space/:space_name/key/:key").delete(kvstorage_handler::remove_key);
+    api.at("/space/:space_name/keys").get(kvstorage_handler::list_keys);
 
-    // Version endpoints
-    api.at("/space/:space_name/versions").get(version_handler::list_versions);
-    api.at("/space/:space_name/version/:version_id").get(version_handler::get_version_by_id);
-    api.at("/space/:space_name/version/:version_name/by-name").get(version_handler::get_version_by_name);
-    api.at("/space/:space_name/version").get(version_handler::get_default_version);
-    api.at("/space/:space_name/version").post(version_handler::create_version);
-
-    // Vector endpoints (default index name is "default")
-    api.at("/space/:space_name/vector").post(vector_handler::vector);
-    api.at("/space/:space_name/vector/:index_name").post(vector_handler::vector);
-    api.at("/space/:space_name/version/:version_id/vector").post(vector_handler::vector_with_version);
-    api.at("/space/:space_name/version/:version_id/vector/:index_name").post(vector_handler::vector_with_version);
-    api.at("/space/:space_name/version/:version_id/vectors").get(vector_handler::get_vectors_by_version_id);
-    api.at("/space/:space_name/version/:version_id/vectors/:index_name").get(vector_handler::get_vectors_by_version_id);
-    api.at("/space/:space_name/vectors").get(vector_handler::get_vectors_by_default_version);
-
+    // Rerank endpoints
+    api.at("/space/:space_name/rerank").post(rerank_handler::rerank);
+    api.at("/space/:space_name/version/:version_id/rerank").post(rerank_handler::rerank_with_version);
+    
     // Search endpoints (default index name is "default")
     api.at("/space/:space_name/search").post(search_handler::search);
     api.at("/space/:space_name/search/:index_name").post(search_handler::search);
     api.at("/space/:space_name/version/:version_id/search").post(search_handler::search_with_version);
     api.at("/space/:space_name/version/:version_id/search/:index_name").post(search_handler::search_with_version);
+
+    // Security endpoints
+    api.at("/security/tokens").post(security_handler::create_rbac_token);
+    api.at("/security/tokens").get(security_handler::list_rbac_tokens);
+    api.at("/security/tokens/:token").delete(security_handler::delete_rbac_token);
+    api.at("/security/tokens/:token").put(security_handler::update_rbac_token);
 
     // Snapshot endpoints
     api.at("/snapshot").post(snapshot_handler::create_snapshot);
@@ -191,15 +192,27 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     api.at("/snapshots/restore").post(snapshot_handler::restore_snapshot_from_upload);
     api.at("/snapshot/delete_all").delete(snapshot_handler::delete_all_snapshots);
 
-    // Security endpoints
-    api.at("/security/tokens").post(security_handler::create_rbac_token);
-    api.at("/security/tokens").get(security_handler::list_rbac_tokens);
-    api.at("/security/tokens/:token").delete(security_handler::delete_rbac_token);
-    api.at("/security/tokens/:token").put(security_handler::update_rbac_token);
+    // Space endpoints
+    api.at("/space").post(space_handler::space);
+    api.at("/space/:space_name").get(space_handler::get_space);
+    api.at("/space/:space_name").post(space_handler::update_space);
+    api.at("/space/:space_name").delete(space_handler::delete_space);
+    api.at("/spaces").get(space_handler::list_spaces);
 
-    // keyvalue Storage endpoints
-    api.at("/space/:space_name/key/:key").post(kvstorage_handler::put_key);
-    api.at("/space/:space_name/key/:key").get(kvstorage_handler::get_key);
-    api.at("/space/:space_name/key/:key").delete(kvstorage_handler::remove_key);
-    api.at("/space/:space_name/keys").get(kvstorage_handler::list_keys);
+    // Vector endpoints (default index name is "default")
+    api.at("/space/:space_name/vector").post(vector_handler::vector);
+    api.at("/space/:space_name/vector/:index_name").post(vector_handler::vector);
+    api.at("/space/:space_name/version/:version_id/vector").post(vector_handler::vector_with_version);
+    api.at("/space/:space_name/version/:version_id/vector/:index_name").post(vector_handler::vector_with_version);
+    api.at("/space/:space_name/version/:version_id/vectors").get(vector_handler::get_vectors_by_version_id);
+    api.at("/space/:space_name/version/:version_id/vectors/:index_name").get(vector_handler::get_vectors_by_version_id);
+    api.at("/space/:space_name/vectors").get(vector_handler::get_vectors_by_default_version);
+
+    // Version endpoints
+    api.at("/space/:space_name/versions").get(version_handler::list_versions);
+    api.at("/space/:space_name/version/:version_id").get(version_handler::get_version_by_id);
+    api.at("/space/:space_name/version/:version_name/by-name").get(version_handler::get_version_by_name);
+    api.at("/space/:space_name/version").get(version_handler::get_default_version);
+    api.at("/space/:space_name/version").post(version_handler::create_version);
+
 }

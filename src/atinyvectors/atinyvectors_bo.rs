@@ -4,6 +4,7 @@ use crate::atinyvectors::version::VersionServiceManagerWrapper;
 use crate::atinyvectors::vector::VectorServiceManagerWrapper;
 use crate::atinyvectors::snapshot::SnapshotServiceManagerWrapper;
 use crate::atinyvectors::rbac_token::RbacTokenServiceManagerWrapper;
+use crate::atinyvectors::rerank::RerankServiceManagerWrapper;
 use crate::atinyvectors::idcache::IdCacheManagerWrapper;
 use std::sync::Arc;
 
@@ -15,6 +16,7 @@ pub struct ATinyVectorsBO {
     pub version: Arc<VersionServiceManagerWrapper>,
     pub snapshot: Arc<SnapshotServiceManagerWrapper>,
     pub rbac_token: Arc<RbacTokenServiceManagerWrapper>,
+    pub rerank: Arc<RerankServiceManagerWrapper>,
     pub id_cache: Arc<IdCacheManagerWrapper>,
 }
 
@@ -29,7 +31,8 @@ impl ATinyVectorsBO {
             version: Arc::new(VersionServiceManagerWrapper::new()),
             snapshot: Arc::new(SnapshotServiceManagerWrapper::new()),
             rbac_token: Arc::new(RbacTokenServiceManagerWrapper::new()),
-            id_cache: Arc::new(IdCacheManagerWrapper::new()), // 초기화
+            rerank: Arc::new(RerankServiceManagerWrapper::new()),
+            id_cache: Arc::new(IdCacheManagerWrapper::new()),
         }
     }
 }

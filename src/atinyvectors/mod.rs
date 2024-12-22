@@ -6,6 +6,7 @@ pub mod atinyvectors_raft_command;
 
 pub mod idcache;
 pub mod rbac_token;
+pub mod rerank;
 pub mod search;
 pub mod space;
 pub mod version;
