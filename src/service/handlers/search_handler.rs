@@ -67,8 +67,15 @@ pub async fn search(mut req: Request<Arc<App>>) -> tide::Result {
     let version_id = 0;
 
     let body: Value = req.body_json().await?;
+    let k = if let Some(top_k) = body.get("top_k").and_then(|v| v.as_u64()) {
+        top_k as usize
+    } else if let Some(k_value) = body.get("k").and_then(|v| v.as_u64()) {
+        k_value as usize
+    } else {
+        10
+    };
     let bo = req.state().atinyvectors_bo.clone();
-    let result = bo.search.search(&space_name, version_id, &body.to_string(), 10);
+    let result = bo.search.search(&space_name, version_id, &body.to_string(), k);
 
     match result {
         Ok(versions) => {
@@ -109,8 +116,15 @@ pub async fn search_with_version(mut req: Request<Arc<App>>) -> tide::Result {
     let version_id: i32 = req.param("version_id").unwrap_or("0").parse().unwrap_or(0);
     
     let body: Value = req.body_json().await?;
+    let k = if let Some(top_k) = body.get("top_k").and_then(|v| v.as_u64()) {
+        top_k as usize
+    } else if let Some(k_value) = body.get("k").and_then(|v| v.as_u64()) {
+        k_value as usize
+    } else {
+        10
+    };
     let bo = req.state().atinyvectors_bo.clone();
-    let result = bo.search.search(&space_name, version_id, &body.to_string(), 10);
+    let result = bo.search.search(&space_name, version_id, &body.to_string(), k);
 
     match result {
         Ok(versions) => {
