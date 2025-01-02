@@ -72,7 +72,7 @@ async fn serve_swagger(request: tide::Request<Arc<App>>) -> tide::Result<Respons
     
 
 pub fn build_openapi(app: &mut Server<Arc<App>>) {
-    if (!crate::Config::enable_swagger_ui()) {
+    if !crate::Config::enable_swagger_ui() {
         return;
     }
 
@@ -214,5 +214,5 @@ pub fn register_routes(app: &mut Server<Arc<App>>) {
     api.at("/space/:space_name/version/:version_name/by-name").get(version_handler::get_version_by_name);
     api.at("/space/:space_name/version").get(version_handler::get_default_version);
     api.at("/space/:space_name/version").post(version_handler::create_version);
-
+    api.at("/space/:space_name/version/:version_id").delete(version_handler::delete_version);
 }

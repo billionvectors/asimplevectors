@@ -2,6 +2,7 @@ use std::sync::Arc;
 use tide::{Body, Request, Response, StatusCode};
 use serde_json::Value;
 use serde_json::json;
+use serde::Deserialize;
 use async_std::fs;
 use async_std::path::Path;
 use tracing::{debug, error};
@@ -14,6 +15,12 @@ use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
 
 use crate::service::handlers::dto::keyvalue_dto::{
     KeyValueRequest, KeyValueResponse, KeyValueErrorResponse, ListKeysResponse};
+
+#[derive(Deserialize)]
+struct QueryParams {
+    start: Option<usize>,
+    limit: Option<usize>,
+}
 
 // Helper function to check keyvalue permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {
@@ -240,10 +247,10 @@ pub async fn remove_key(mut req: Request<Arc<App>>) -> tide::Result {
     }
 }
 
-// GET /api/space/{space_name}/storage_keys
+// GET /api/space/{space_name}/keys?start={start}&limit={limit}
 #[utoipa::path(
     get,
-    path = "/api/space/{space_name}/storage_keys",
+    path = "/api/space/{space_name}/keys?start={start}&limit={limit}",
     responses(
         (status = 200, description = "Keys listed successfully", body = ListKeysResponse),
         (status = 403, description = "Forbidden", body = KeyValueErrorResponse)
@@ -259,6 +266,11 @@ pub async fn list_keys(req: Request<Arc<App>>) -> tide::Result {
     }
 
     let space_name = req.param("space_name").unwrap_or("default").to_string();
+    let query: QueryParams = req.query()?;
+    let start = query.start.unwrap_or(0);
+    let limit = query.limit.unwrap_or(100);
+
+    tracing::debug!("list_keys called with space_name: {}, start: {}, limit: {}", space_name, start, limit);
 
     let target_directory = format!("{}/space/{}", Config::data_path(), space_name);
 
@@ -273,7 +285,7 @@ pub async fn list_keys(req: Request<Arc<App>>) -> tide::Result {
     if !std::path::Path::new(&path).exists() {
         return Ok(Response::builder(StatusCode::Ok)
             .header("Content-Type", "application/json")
-            .body(Body::from_json(&json!({ "keys": [] }))?)
+            .body(Body::from_json(&json!({ "keys": [], "total_count": 0 }))?)
             .build());
     }
 
@@ -284,9 +296,12 @@ pub async fn list_keys(req: Request<Arc<App>>) -> tide::Result {
     // Create a vector to hold all the keys
     let mut keys = Vec::new();
 
-    // Iterate through the database and collect the keys
+    // Get the total count of keys
+    let total_count = db.iterator(IteratorMode::Start).count();
+
+    // Iterate through the database and collect the keys with pagination
     let iter = db.iterator(IteratorMode::Start); // Iterate over the whole database
-    for item in iter {
+    for (i, item) in iter.enumerate().skip(start).take(limit) {
         match item {
             Ok((key, _value)) => {
                 if let Ok(key_str) = String::from_utf8(key.to_vec()) {
@@ -298,10 +313,10 @@ pub async fn list_keys(req: Request<Arc<App>>) -> tide::Result {
             }
         }
     }
-    
+
     // Return the list of keys as a JSON response
     Ok(Response::builder(StatusCode::Ok)
         .header("Content-Type", "application/json")
-        .body(Body::from_json(&json!({ "keys": keys }))?)
+        .body(Body::from_json(&json!({ "keys": keys, "total_count": total_count }))?)
         .build())
 }

@@ -2,6 +2,7 @@ use std::sync::Arc;
 use tide::{Body, Request, Response, StatusCode};
 use serde_json::Value;
 use serde_json::json;
+use serde::Deserialize;
 
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -16,6 +17,12 @@ use crate::atinyvectors::atinyvectors_bo::ATinyVectorsBO;
 use crate::service::handlers::dto::vector_dto::{
     VectorData, VectorRequest, VectorResponse, VectorErrorResponse, GetVectorsResponse, VectorDataResponse};
 
+#[derive(Deserialize)]
+struct QueryParams {
+    start: Option<usize>,
+    limit: Option<usize>,
+}
+    
 // Helper function to check snapshot permissions
 fn extract_token(req: &Request<Arc<App>>) -> String {
     req.header("Authorization")
@@ -219,8 +226,9 @@ pub async fn get_vectors_by_default_version(req: Request<Arc<App>>) -> tide::Res
 
     let space_name = req.param("space_name").unwrap_or("default").to_string();
     let version_id: i32 = 0; // default unique version
-    let start: i32 = req.param("start").unwrap_or("0").parse().unwrap_or(0);
-    let limit: i32 = req.param("limit").unwrap_or("10").parse().unwrap_or(0);
+    let query: QueryParams = req.query()?;
+    let start: i32 = query.start.unwrap_or(0) as i32;
+    let limit: i32 = query.limit.unwrap_or(10) as i32;
     let bo = req.state().atinyvectors_bo.clone();
 
     let result = bo.vector.get_vectors_by_version_id(

@@ -57,6 +57,7 @@ pub struct VersionErrorResponse {
 pub struct ListVersionsResponse {
     /// List of versions with their details
     values: Vec<VersionInfo>,
+    total_count: usize,
 }
 
 /// VersionInfo structure containing basic version information

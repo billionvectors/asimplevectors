@@ -45,6 +45,7 @@ pub struct VectorErrorResponse {
 pub struct GetVectorsResponse {
     /// List of vectors
     vectors: Vec<VectorDataResponse>,
+    total_count: usize,
 }
 
 /// Structure representing vector data in a response

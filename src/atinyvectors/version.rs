@@ -15,7 +15,13 @@ extern "C" {
     pub fn atv_version_service_get_by_version_id(manager: *mut VersionServiceManager, space_name: *const c_char, version_id: i32) -> *mut c_char;
     pub fn atv_version_service_get_by_version_name(manager: *mut VersionServiceManager, space_name: *const c_char, version_name: *const c_char) -> *mut c_char;
     pub fn atv_version_service_get_default_version(manager: *mut VersionServiceManager, space_name: *const c_char) -> *mut c_char;
-    pub fn atv_version_service_get_lists(manager: *mut VersionServiceManager, space_name: *const c_char) -> *mut c_char;
+    pub fn atv_version_service_delete_by_version_id(manager: *mut VersionServiceManager, space_name: *const c_char, version_id: i32);
+
+    pub fn atv_version_service_get_lists(
+        manager: *mut VersionServiceManager, 
+        space_name: *const c_char, 
+        start: i32, 
+        limit: i32) -> *mut c_char;
 }
 
 // Safe Rust wrapper for VersionServiceManager
@@ -82,10 +88,10 @@ impl VersionServiceManagerWrapper {
         }
     }
 
-    pub fn get_lists(&self, space_name: &str) -> Result<String, String> {
+    pub fn get_lists(&self, space_name: &str, start: i32, limit: i32) -> Result<String, String> {
         let space_name_c = CString::new(space_name).unwrap();
         unsafe {
-            let result = atv_version_service_get_lists(self.inner, space_name_c.as_ptr());
+            let result = atv_version_service_get_lists(self.inner, space_name_c.as_ptr(), start, limit);
             if result.is_null() {
                 Err("Failed to get version lists".to_string())
             } else {
@@ -94,6 +100,14 @@ impl VersionServiceManagerWrapper {
                 Ok(result_str)
             }
         }
+    }
+
+    pub fn delete_by_version_id(&self, space_name: &str, version_id: i32) -> Result<(), String> {
+        let space_name_c = CString::new(space_name).unwrap();
+        unsafe {
+            atv_version_service_delete_by_version_id(self.inner, space_name_c.as_ptr(), version_id);
+        };
+        Ok(())
     }
 }
 

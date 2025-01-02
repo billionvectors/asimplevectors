@@ -29,4 +29,5 @@ pub struct KeyValueErrorResponse {
 pub struct ListKeysResponse {
     /// List of keys stored in the system
     keys: Vec<String>,
+    total_count: usize,
 }

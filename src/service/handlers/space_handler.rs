@@ -94,6 +94,16 @@ pub async fn space(mut req: Request<Arc<App>>) -> tide::Result {
         }
     };
 
+    let valid_name = regex::Regex::new(r"^[a-zA-Z0-9_-]+$").unwrap();
+    if !valid_name.is_match(space_name) {
+        return Ok(
+            Response::builder(StatusCode::BadRequest)
+                .header("Content-Type", "application/json")
+                .body(Body::from_json(&json!({"error": "Invalid 'name' format, only alphanumeric characters, '_', and '-' are allowed"}))?)
+                .build(),
+        );
+    }
+
     let bo = req.state().atinyvectors_bo.clone();
     let space_exists = bo.id_cache.get_default_version_id(space_name);
     if space_exists > 0 {

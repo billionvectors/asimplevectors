@@ -30,11 +30,13 @@ impl ATinyVectorsRaftCommand {
         key: &str,
         value: &str,
     ) {
+        // TODO: command에 delete_version을 추가해줘. version_handler.rs에 있는 delete_version 함수는 bo에서 delete를 직접 호출하는게 아니라, raft로 write를 하고 이 핸들러에서 삭제해야 동기화가 가능해
         match command {
             "space" => self.process_space_command(request_obj, key, value).await,
             "update_space" => self.process_update_space_command(request_obj).await,
             "delete_space" => self.process_delete_space_command(request_obj).await,
             "version" => self.process_version_command(request_obj).await,
+            "delete_version" => self.process_delete_version_command(request_obj).await,
             "vector" => self.process_vector_command(request_obj).await,
             "vector_with_version" => self.process_vector_with_version_command(request_obj).await,
             "create_snapshot" => self.process_create_snapshot_command(request_obj).await,
@@ -98,6 +100,16 @@ impl ATinyVectorsRaftCommand {
             }
         } else {
             tracing::error!("No 'value' field found in 'request'");
+        }
+    }
+
+    async fn process_delete_version_command(&self, request_obj: &Value) {
+        tracing::info!("Processing delete version command");
+        let space_name = request_obj.get("space_name").and_then(|v| v.as_str()).unwrap_or("default");
+        let version_id = request_obj.get("version_id").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+
+        if let Err(e) = self.atinyvectors_bo.version.delete_by_version_id(space_name, version_id) {
+            tracing::error!("Failed to delete version: {}", e);
         }
     }
 
