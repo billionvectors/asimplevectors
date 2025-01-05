@@ -30,7 +30,6 @@ impl ATinyVectorsRaftCommand {
         key: &str,
         value: &str,
     ) {
-        // TODO: command에 delete_version을 추가해줘. version_handler.rs에 있는 delete_version 함수는 bo에서 delete를 직접 호출하는게 아니라, raft로 write를 하고 이 핸들러에서 삭제해야 동기화가 가능해
         match command {
             "space" => self.process_space_command(request_obj, key, value).await,
             "update_space" => self.process_update_space_command(request_obj).await,

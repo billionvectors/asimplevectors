@@ -7,6 +7,6 @@ cd temp
 git clone https://github.com/billionvectors/atinyvectors.git
 cd atinyvectors
 git pull
-./dockerbuild.sh --no-cache=true
+./dockerbuild.sh --opt-level=avx2 --no-cache=true
 cp output/* ../../lib/
 cp -rf db ../../
