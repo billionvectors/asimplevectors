@@ -4,7 +4,7 @@ version = "0.2.1"
 edition = "2021"
 
 [dependencies]
-openraft = { git = "https://github.com/datafuselabs/openraft.git", features = ["serde", "type-alias"] }
+openraft = { git = "https://github.com/datafuselabs/openraft.git", tag = "v0.10.0-alpha.7", features = ["serde", "type-alias"] } 
 async-std = "*"
 
 # openraft uses async-io, therefore we can not use tokio directly. it just workaround patch for dependency error
