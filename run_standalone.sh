@@ -52,6 +52,8 @@ if [ ! -d "venv" ]; then
   echo "Virtual environment not found. Creating virtual environment..."
   
   # Create virtual environment
+  sudo apt install python3
+  sudo apt install python3-venv
   python3 -m venv venv
 
   if [ $? -eq 0 ]; then
@@ -78,6 +80,14 @@ if [ -f "./example/requirements.txt" ]; then
     echo "Error installing dependencies."
     exit 1
   fi
+fi
+
+# Check if .env file exists
+if [ ! -f ".env" ]; then
+  echo "Error: .env file not found."
+  echo "Please copy .env.local to .env using the following command:"
+  echo "cp -rf .env.local .env"
+  exit 1
 fi
 
 rm -r 127.0.0.1:*.db

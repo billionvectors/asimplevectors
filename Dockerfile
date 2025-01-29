@@ -19,17 +19,15 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     libzstd-dev \
     libssl-dev \
-    cargo \
+    libopenblas-dev \
     libomp-dev \
-    libblas-dev \
-    liblapack-dev \
+    cargo \
     apt-transport-https \
     ca-certificates \
     gnupg \
     software-properties-common && \
     # Add Kitware APT repository for the latest CMake
-    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg && \
-    echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ focal main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    wget -O - https://apt.kitware.com/kitware-archive.sh | bash && \
     apt-get update && \
     apt-get install -y cmake && \
     # Clean up to reduce image size

@@ -33,8 +33,9 @@ This project is built with Raft consensus to achieve clustering. It leverages co
 ## Quick Install from Docker
 To download the latest version of the asimplevectors Docker image, use the following
 ```bash
+mkdir -p $(pwd)/data
 docker pull billionvectors/asimplevectors:latest
-docker run -p 21001:21001 -p 21002:21002 billionvectors/asimplevectors:latest
+docker run -v $(pwd)/data:/app/data -p 21001:21001 -p 21002:21002 billionvectors/asimplevectors:latest
 curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
 ```
 
@@ -62,19 +63,23 @@ curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json"
 ## Docker Run
 
 ```bash
+mkdir -p $(pwd)/data
 docker build --build-arg BUILD_TYPE=Release -t asimplevectors .
-docker run -p 21001:21001 -p 21002:21002 asimplevectors &
+docker run -v $(pwd)/data:/app/data -p 21001:21001 -p 21002:21002 asimplevectors &
 curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
 ```
 
 ## Clustering
 ```bash
+mkdir -p $(pwd)/data1
+mkdir -p $(pwd)/data2
+mkdir -p $(pwd)/data3
 docker build --build-arg BUILD_TYPE=Release -t asimplevectors .
-docker run -p 21001:21001 -p 21002:21002 asimplevectors --id 1 &
+docker run -v $(pwd)/data:/app/data1 -p 21001:21001 -p 21002:21002 asimplevectors --id 1 &
 curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
 
-docker run -p 22001:21001 -p 22002:21002 asimplevectors --id 2 &
-docker run -p 23001:21001 -p 23002:21002 asimplevectors --id 3 &
+docker run -v $(pwd)/data:/app/data2 -p 22001:21001 -p 22002:21002 asimplevectors --id 2 &
+docker run -v $(pwd)/data:/app/data3 -p 23001:21001 -p 23002:21002 asimplevectors --id 3 &
 
 # register new cluster
 curl --silent "127.0.0.1:21001/cluster/add-learner" -H "Content-Type: application/json" -d '[2, "127.0.0.1:22001", "127.0.0.1:22002"]'
