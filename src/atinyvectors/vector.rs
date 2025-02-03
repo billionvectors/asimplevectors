@@ -22,7 +22,8 @@ extern "C" {
         space_name: *const c_char,
         version_id: i32, 
         start: i32, 
-        limit: i32) -> *mut c_char;
+        limit: i32,
+        filter: *const c_char,) -> *mut c_char;
 }
 
 // Safe Rust wrapper for VectorServiceManager
@@ -46,11 +47,12 @@ impl VectorServiceManagerWrapper {
         Ok(())
     }
 
-    pub fn get_vectors_by_version_id(&self, space_name: &str, version_id: i32, start: i32, limit: i32) -> Result<String, String> {
+    pub fn get_vectors_by_version_id(&self, space_name: &str, version_id: i32, start: i32, limit: i32, filter: &str) -> Result<String, String> {
         let space_name_c = CString::new(space_name).unwrap();
+        let filter_c = CString::new(filter).unwrap();
 
         unsafe {
-            let result = atv_vector_service_get_vectors_by_version_id(self.inner, space_name_c.as_ptr(), version_id, start, limit);
+            let result = atv_vector_service_get_vectors_by_version_id(self.inner, space_name_c.as_ptr(), version_id, start, limit, filter_c.as_ptr());
             if result.is_null() {
                 Err("Failed to extract vectors".to_string())
             } else {

@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  asimplevectors:
+    image: billionvectors/asimplevectors:latest
+    volumes:
+      - ./data:/app/asimplevectors/data
+    environment:
+      - ATV_STANDALONE=true
+    ports:
+      - "21001:21001"
+      - "21002:21002"
+
+  webui:
+    image: billionvectors/asimplevectors_webui:latest
+    volumes:
+      - ./data:/data
+    ports:
+      - "21080:8080"
+    environment:
+      - SERVER_URL=http://asimplevectors:21001

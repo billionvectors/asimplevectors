@@ -30,43 +30,25 @@ This project is built with Raft consensus to achieve clustering. It leverages co
 
 ![Overall Architecture](docs/images/overallarchitecture.svg)
 
-## Quick Install from Docker
+## Quick Start from Docker
+
+## Run with WebUI
+
+To run the asimplevectors with WebUI, use the following command:
+```bash
+mkdir -p $(pwd)/data
+docker-compose up
+```
+This will open the WebUI on port 21080 and start the server on port 21001. For more information about the WebUI, please refer to [https://docs.asimplevectors.com/getstarted/webui](https://docs.asimplevectors.com/getstarted/webui).
+
+![WebUI](docs/images/spaces.jpg)
+
+### Run Server Only
 To download the latest version of the asimplevectors Docker image, use the following
 ```bash
 mkdir -p $(pwd)/data
 docker pull billionvectors/asimplevectors:latest
-docker run -v $(pwd)/data:/app/data -p 21001:21001 -p 21002:21002 billionvectors/asimplevectors:latest
-curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
-```
-
-## How to Run Examples
-
-1. Run `install_dependency.sh` to install necessary dependencies.
-2. Copy .env.local file to .env
-3. Execute `./run_example.sh search` and select a test file under the `example/` directory.
--> search, security, snapshot, space, vector, version
-
-## How to Run
-
-1. Install dependencies: `./install_dependency.sh`
--> If you get an error that your CMake version is low, we recommend docker build. If you have trouble with *docker build*, get the latest version from [cmake.org](https://cmake.org) and install it. 
-2. Build the project: `./build.sh --release`
-3. Copy .env.local file to .env
-4. Start the vector database node:
-```bash
-./asimplevectors --id 1 --http-addr 127.0.0.1:21001 --rpc-addr 127.0.0.1:22001 &
-```
-5. Initialize the cluster with the following curl command:
-```bash
-curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
-```
-## Docker Run
-
-```bash
-mkdir -p $(pwd)/data
-docker build --build-arg BUILD_TYPE=Release -t asimplevectors .
-docker run -v $(pwd)/data:/app/data -p 21001:21001 -p 21002:21002 asimplevectors &
-curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
+docker run -v $(pwd)/data:/app/asimplevectors/data -e ATV_STANDALONE=true -p 21001:21001 -p 21002:21002 billionvectors/asimplevectors:latest
 ```
 
 ## Clustering
@@ -75,11 +57,11 @@ mkdir -p $(pwd)/data1
 mkdir -p $(pwd)/data2
 mkdir -p $(pwd)/data3
 docker build --build-arg BUILD_TYPE=Release -t asimplevectors .
-docker run -v $(pwd)/data:/app/data1 -p 21001:21001 -p 21002:21002 asimplevectors --id 1 &
+docker run -v $(pwd)/data1:/app/asimplevectors/data -e ATV_STANDALONE=false -p 21001:21001 -p 21002:21002 asimplevectors --id 1 &
 curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
 
-docker run -v $(pwd)/data:/app/data2 -p 22001:21001 -p 22002:21002 asimplevectors --id 2 &
-docker run -v $(pwd)/data:/app/data3 -p 23001:21001 -p 23002:21002 asimplevectors --id 3 &
+docker run -v $(pwd)/data2:/app/asimplevectors/data -p 22001:21001 -p 22002:21002 asimplevectors --id 2 &
+docker run -v $(pwd)/data3:/app/asimplevectors/data -p 23001:21001 -p 23002:21002 asimplevectors --id 3 &
 
 # register new cluster
 curl --silent "127.0.0.1:21001/cluster/add-learner" -H "Content-Type: application/json" -d '[2, "127.0.0.1:22001", "127.0.0.1:22002"]'
@@ -88,8 +70,30 @@ curl --silent "127.0.0.1:21001/cluster/metrics"
 ```
 This adds a clear note about Raft's recommendation for an odd number of nodes but also specifies that two nodes will still work.
 
-## Search Example
-### Creating a Space
+## How to Run Examples
+
+1. Run `install_dependency.sh` to install necessary dependencies.
+2. Copy .env.local file to .env
+3. Execute `./run_example.sh search` and select a test file under the `example/` directory.
+-> search, security, snapshot, space, vector, version
+
+### Build from source code
+
+1. Install dependencies: `./install_dependency.sh`
+-> If you get an error that your CMake version is low, we recommend docker build. If you have trouble with *docker build*, get the latest version from [cmake.org](https://cmake.org) and install it. 
+2. Build the project: `./build.sh --release`
+3. Copy .env.local file to .env
+4. Start the vector database node:
+```bash
+./asimplevectors --id 1 --http-addr 0.0.0.0:21001 --rpc-addr 0.0.0.0:22001 &
+```
+5. Initialize the cluster with the following curl command:
+```bash
+curl --silent "127.0.0.1:21001/cluster/init" -H "Content-Type: application/json" -d '{}'
+```
+
+### Search Example
+#### Creating a Space
 
 To create a new Space, you can use the `/api/space` endpoint. Below is an example where a Space called `spacename` is created with a default index configuration. The **dimension** is set to 4, and the **metric** is set to **L2** (Euclidean distance).
 
@@ -102,7 +106,7 @@ curl "127.0.0.1:21001/api/space" -H "Content-Type: application/json" -d  \
 }'
 ```
 
-### Checking Created Space Information
+#### Checking Created Space Information
 
 Once a Space is created, you can check its details by using the /api/space/{spacename} endpoint.
 
@@ -110,7 +114,7 @@ Once a Space is created, you can check its details by using the /api/space/{spac
 curl "127.0.0.1:21001/api/space/spacename"
 ```
 
-### Adding Vectors to the Space
+#### Adding Vectors to the Space
 
 To add vectors to the created Space, you can use the /api/space/{spacename}/vector endpoint. Below is an example where several vectors are added to the spacename Space, each with its own ID, vector data, and metadata.
 
@@ -147,7 +151,7 @@ curl "127.0.0.1:21001/api/space/spacename/vector" -H "Content-Type: application/
 }'
 ```
 
-### Searching with Dense Vectors
+#### Searching with Dense Vectors
 
 To search using a dense vector, you can use the following JSON format. This will query the database with the given vector and return the most similar vectors.
 

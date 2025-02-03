@@ -21,6 +21,7 @@ use crate::service::handlers::dto::vector_dto::{
 struct QueryParams {
     start: Option<usize>,
     limit: Option<usize>,
+    filter: Option<String>,
 }
     
 // Helper function to check snapshot permissions
@@ -159,13 +160,14 @@ pub async fn vector_with_version(mut req: Request<Arc<App>>) -> tide::Result {
     }
 }
 
-// GET /space/{space_name}/version/{version_id}/vectors?start=0&limit=10
+// GET /space/{space_name}/version/{version_id}/vectors?start=0&limit=10&filter=
 #[utoipa::path(
     get,
     path = "/space/{space_name}/version/{version_id}/vectors",
     params(
         ("start" = i32, Path, description = "Starting index of vectors"),
-        ("limit" = i32, Path, description = "Maximum number of vectors to retrieve")
+        ("limit" = i32, Path, description = "Maximum number of vectors to retrieve"),
+        ("filter" = String, Query, description = "Filter to apply on vectors")
     ),
     responses(
         (status = 200, description = "Vectors retrieved successfully", body = GetVectorsResponse),
@@ -186,10 +188,12 @@ pub async fn get_vectors_by_version_id(req: Request<Arc<App>>) -> tide::Result {
     let version_id: i32 = req.param("version_id").unwrap_or("0").parse().unwrap_or(0);
     let start: i32 = req.param("start").unwrap_or("0").parse().unwrap_or(0);
     let limit: i32 = req.param("limit").unwrap_or("10").parse().unwrap_or(0);
+    let filter = req.query::<QueryParams>()?.filter.unwrap_or_default();
+
     let bo = req.state().atinyvectors_bo.clone();
 
     let result = bo.vector.get_vectors_by_version_id(
-        space_name.as_str(), version_id, start, limit);
+        space_name.as_str(), version_id, start, limit, filter.as_str());
 
     match result {
         Ok(vectors) => Ok(
@@ -201,13 +205,14 @@ pub async fn get_vectors_by_version_id(req: Request<Arc<App>>) -> tide::Result {
     }
 }
 
-// GET /space/{space_name}/vectors?start=0&limit=10
+// GET /space/{space_name}/vectors?start=0&limit=10&filter=
 #[utoipa::path(
     get,
     path = "/space/{space_name}/vectors",
     params(
         ("start" = i32, Path, description = "Starting index of vectors"),
-        ("limit" = i32, Path, description = "Maximum number of vectors to retrieve")
+        ("limit" = i32, Path, description = "Maximum number of vectors to retrieve"),
+        ("filter" = String, Query, description = "Filter to apply on vectors")
     ),
     responses(
         (status = 200, description = "Vectors retrieved successfully", body = GetVectorsResponse),
@@ -229,10 +234,12 @@ pub async fn get_vectors_by_default_version(req: Request<Arc<App>>) -> tide::Res
     let query: QueryParams = req.query()?;
     let start: i32 = query.start.unwrap_or(0) as i32;
     let limit: i32 = query.limit.unwrap_or(10) as i32;
+    let filter = query.filter.unwrap_or_default();
+
     let bo = req.state().atinyvectors_bo.clone();
 
     let result = bo.vector.get_vectors_by_version_id(
-        space_name.as_str(), version_id, start, limit);
+        space_name.as_str(), version_id, start, limit, filter.as_str());
 
     match result {
         Ok(vectors) => Ok(
