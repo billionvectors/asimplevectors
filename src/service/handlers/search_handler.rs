@@ -74,6 +74,8 @@ pub async fn search(mut req: Request<Arc<App>>) -> tide::Result {
     } else {
         10
     };
+
+    let k = if k <= 0 { 10 } else { k };
     let bo = req.state().atinyvectors_bo.clone();
     let result = bo.search.search(&space_name, version_id, &body.to_string(), k);
 
@@ -123,6 +125,8 @@ pub async fn search_with_version(mut req: Request<Arc<App>>) -> tide::Result {
     } else {
         10
     };
+
+    let k = if k <= 0 { 10 } else { k };
     let bo = req.state().atinyvectors_bo.clone();
     let result = bo.search.search(&space_name, version_id, &body.to_string(), k);
 

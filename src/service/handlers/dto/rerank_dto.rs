@@ -20,9 +20,11 @@ pub struct RerankRequest {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct RerankResponse {
     /// The vector unique ID after reranking
-    vector_unique_id: u64,
+    id: u64,
+    /// Distance of the vector from the query
+    distance: f64,
     /// The BM25 score of the vector
-    score: f64,
+    bm25_score: f64,
 }
 
 /// ErrorResponse DTO for rerank operations

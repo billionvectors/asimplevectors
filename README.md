@@ -39,7 +39,7 @@ To run the asimplevectors with WebUI, use the following command:
 mkdir -p $(pwd)/data
 docker-compose up
 ```
-This will open the WebUI on port 21080 and start the server on port 21001. For more information about the WebUI, please refer to [https://docs.asimplevectors.com/getstarted/webui](https://docs.asimplevectors.com/getstarted/webui).
+This will open the WebUI on port 21080 and start the server on port 21001. For more information about the WebUI, please refer to [https://docs.asimplevectors.com/getstarted/webui](https://docs.asimplevectors.com/getstarted/webui)
 
 ![WebUI](docs/images/spaces.jpg)
 
@@ -175,7 +175,7 @@ curl "127.0.0.1:21001/api/space/spacename/search" -H "Content-Type: application/
 - **Inner Product (Dot Product)**
 
 ## C API
-If you want the C API, please visit [atinyvectors](https://github.com/billionvectors/atinyvectors).
+If you want the C API, please visit [atinyvectors](https://github.com/billionvectors/atinyvectors)
 
 ## License
 
@@ -183,4 +183,4 @@ For details, please refer to the `LICENSE` file.
 
 ## Support
 
-If you're interested in forming a business partnership with us, please send an email to [support@billionvectors.com](mailto:support@billionvectors.com).
+If you're interested in forming a business partnership with us, please send an email to [support@billionvectors.com](mailto:support@billionvectors.com)

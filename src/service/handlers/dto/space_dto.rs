@@ -73,7 +73,7 @@ pub struct SpaceResponse {
     /// Name of the space
     name: String,
     /// Unique identifier for the space
-    spaceId: u64,
+    space_id: u64,
     /// UTC time of last update
     updated_time_utc: u64,
     /// Version information of the space
@@ -97,21 +97,21 @@ pub struct VectorIndexData {
     /// Dimensionality of the vector index
     dimension: u32,
     /// HNSW configuration for the vector index
-    hnswConfig: HnswConfig,
+    hnsw_config: HnswConfig,
     /// Whether this index is the default index
     is_default: bool,
     /// Metric type used in the vector index
-    metricType: u8,
+    metric_type: u8,
     /// Name of the vector index
     name: String,
     /// Quantization configuration for the vector index
-    quantizationConfig: QuantizationConfig,
+    quantization_config: QuantizationConfig,
     /// UTC time of last update
     updated_time_utc: u64,
     /// Unique identifier for the vector index
-    vectorIndexId: u64,
+    vector_index_id: u64,
     /// Type of vector value
-    vectorValueType: u8,
+    vector_value_type: u8,
 }
 
 /// HNSW configuration structure
